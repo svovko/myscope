@@ -31,17 +31,11 @@ class Telescope:
         gpio.setup(self.pin_stp_top, gpio.OUT)
         gpio.setup(self.pin_stp_bottom, gpio.OUT)
 
-    # če želim pohitriti, je potrebno samo zadnjo vredost v accelerate, zmanjšat
-    # 0.005 -> 0.00005: 0.005 - 10*x = 0.00005 => (0.005 - 0.00005) / 10 = korak (0.000495) => 0.005 - 0.000495 = 0.004505
     def turn_motor(self, pin, steps, tb):
-        # accelerate = [0.005, 0.004505, 0.00401, 0.003515, 0.00302, 0.002525, 0.00203, 0.001535, 0.00104, 0.000545]
-        # accelerate = [0.003, 0.0027, 0.0024, 0.0021, 0.0018, 0.0015, 0.0012, 0.0009, 0.0006, 0.0003]
         accelerate = [0.002, 0.0018, 0.0016, 0.0014, 0.0012, 0.001, 0.0008, 0.0006, 0.0004, 0.0002]
         if tb == 'T':
             accelerate = [0.01, 0.009, 0.008, 0.007, 0.006, 0.005, 0.004, 0.003, 0.002, 0.001]
 
-        # accelerate
-        print('accelerate')
         speed = accelerate[0]
         for i in range(steps // 2):
 
@@ -53,8 +47,6 @@ class Telescope:
             gpio.output(pin, False)
             sleep(speed)
 
-        # decelerate
-        print('decelerate')
         for i in range(steps // 2, 0, -1):
 
             if i < 200:
@@ -73,9 +65,6 @@ class Telescope:
     #  2.545 steps * 2 = 90stopinj
     #  2.545 steps * 2 = 5.400m
     def turn_ud(self, alt):  # alt is in minutes
-        # dms = [int(x) for x in alt.split()]
-        # minutes = dms[0] * 60 + dms[1]  # convert to minutes
-
         minutes = alt
 
         gpio.output(self.pin_dir_top, not self.altitude_m < minutes)  # turn up or down
@@ -92,9 +81,6 @@ class Telescope:
     #  24.355 steps * 2 = 360 stopinj
     #  24.355 steps * 2 = 21.600m
     def turn_lr(self, az):
-        # print(az)
-        # dms = [int(x) for x in az.split()]
-        # minutes = dms[0] * 60 + dms[1]
         minutes = az
 
         gpio.output(self.pin_dir_bottom, self.azimuth_m < minutes)  # turn left or right
