@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>{{ title }}</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="mobile-web-app-capable" content="yes">
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/all.css') }}">
+
+  <script src="{{ url_for('static', filename='js/jquery.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/popper.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
+
+  <!--link rel="stylesheet" href="../static/bootstrap.min.css">
+  <script src="../static/jquery.min.js"></script>
+  <script src="../static/popper.min.js"></script>
+  <script src="../static/bootstrap.min.js"></script>
+  <link rel="stylesheet" href="../static/all.css"-->
+
+  <script>
+    function locate(selectObject)
+    {
+        var value = selectObject.value;
+        window.location.href = "https://192.168.64.107:5000/locate/" + value;
+    }
+
+    function initialize(position)
+    {
+        var d = new Date();
+        dt = d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate() + ' ' + // 2004-02-29
+             d.getHours() + ':' + d.getMinutes() + ':' + d.getSeconds(); // 16:21:42
+
+        var lat = position.coords.latitude;
+        var lon = position.coords.longitude;
+
+        window.location.href = "https://192.168.64.107:5000/initialize/"+lat+" "+lon+";"+dt;
+    }
+
+    function getLocationData()
+    {
+        if (navigator.geolocation)
+        {
+            navigator.geolocation.getCurrentPosition(initialize);
+        }
+        else
+        {
+            alert("Geolocation is not supported by this browser.");
+        }
+    }
+  </script>
+
+  <style>
+    html, body { height:100%; }
+
+    .bottom-right
+    {
+        border-radius: 50%;
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+        padding: 1em;
+    }
+
+    .top-left
+    {
+        border-radius: 10%;
+        position: absolute;
+        top: 20px;
+        left: 20px;
+    }
+
+    .top-right
+    {
+        border-radius: 10%;
+        position: absolute;
+        top: 20px;
+        right: 20px;
+    }
+
+   .s_dir {font-size: 2em;}
+  </style>
+</head>
+<body>
+
+<div class="top-left bg-secondary">
+
+      <div class="btn-group">
+        <button type="button" class="btn dropdown-toggle text-danger" data-toggle="dropdown">
+            <i class="fa fa-tachometer-alt fs"></i> <span class="caret"></span>
+        </button>
+        <ul class="dropdown-menu" role="menu">
+          <li><a class="dropdown-item" href='/speed/1'><i class="text-danger">1x</i></a></li>
+          <li><a class="dropdown-item" href='/speed/5'><i class="text-danger">5x</i></a></li>
+          <li><a class="dropdown-item" href='/speed/10'><i class="text-danger">10x</i></a></li>
+          <li><a class="dropdown-item" href='/speed/20'><i class="text-danger">20x</i></a></li>
+          <li><a class="dropdown-item" href='/speed/50'><i class="text-danger">50x</i></a></li>
+          <li><a class="dropdown-item" href='/speed/100'><i class="text-danger">100x</i></a></li>
+          <li><a class="dropdown-item" href='/speed/200'><i class="text-danger">200x</i></a></li>
+        </ul>
+
+      </div>
+
+</div>
+
+<div class="top-right bg-secondary">
+    <div class="col text-right">
+        <div class="btn-group">
+        <button type="button" class="btn dropdown-toggle text-danger" data-toggle="dropdown">
+            <i class="fas fa-times fs"></i> <span class="caret"></span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-right" role="menu">
+            <li><a class='dropdown-item' href='/exit'><i class="text-danger">Exit</i></a></li>
+        </ul>
+      </div>
+    </div>
+</div>
+
+<div class="h-100 d-flex flex-column px-2 bg-dark">
+
+  <div class="flex-column justify-content-center px-2">
+    <div class="row">
+        <div class="col-1"></div>
+        <div class="col text-center"><a class='text-danger' href='/dir/up'><i class="fas fa-angle-up s_dir"></i></a></div>
+        <div class="col-1"></div>
+    </div>
+  </div>
+
+  <div class="flex-column justify-content-center px-2 d-flex flex-grow-1 h-100">
+    <div class="row d-flex align-items-center">
+        <div class="col-1"><a class='text-danger' href='/dir/left'><i class="fas fa-angle-left s_dir"></i></a></div>
+        {% block content %}
+            {% if init == True %}
+                <div class="col">
+                    <select class="form-control" id="exampleFormControlSelect2" onchange="locate(this)">
+                        <option value="">Select Star</option>
+                        <option value="128600">BY Draconis</option>
+                        <option value="128900">Vega</option>
+                        <option value="130000">110 Herculis</option>
+                        <option value="130500">29 Sagittarii</option>
+                        <option value="153700">23 Cephei, Epsilon Cephei</option>
+                        <option value="154000">Gamma Aquarii</option>
+                        <option value="154800">Upsilon Aquarii</option>
+                        <option value="155600">Lambda Pegasi</option>
+                        <option value="155800">EV Lacertae</option>
+                        <option value="155900">Epsilon Gruis</option>
+                        <option value="156200">Mu Pegasi</option>
+                        <option value="156600">GT Pegasi</option>
+                        <option value="156900">Tau(1) Gruis, Tau Gruis</option>
+                        <option value="157200">TW Piscis Austrini</option>
+                        <option value="157400">Fomalhaut</option>
+                        <option value="157500">51 Pegasi</option>
+                        <option value="157900">Pi Piscis Austrini</option>
+                        <option value="159000">7 Andromedae</option>
+                        <option value="130600">V1216 Sagittarii</option>
+                        <option value="131100">Nu(2) Sagittarii</option>
+                        <option value="131200">V1285 Aquilae</option>
+                        <option value="131400">V775 Herculis</option>
+                        <option value="132100">Omicron Sagittarii</option>
+                        <option value="132500">Tau Sagittarii</option>
+                        <option value="133300">59 Draconis</option>
+                        <option value="134000">Rho(1) Sagittarii</option>
+                        <option value="134600">31 Aquilae</option>
+                        <option value="134700">Delta Aquilae</option>
+                        <option value="135600">Mu Aquilae</option>
+                        <option value="135800">Sigma Draconis</option>
+                        <option value="136700">Altair</option>
+                        <option value="138400">15 Sagittae</option>
+                        <option value="138900">Delta Pavonis</option>
+                        <option value="139600">Xi(2) Capricorni</option>
+                        <option value="140900">HU Delphini</option>
+                        <option value="141500">Alpha Indi</option>
+                        <option value="141600">Phi(2) Pavonis</option>
+                        <option value="142600">Eta Indi</option>
+                        <option value="142800">AU Microscopii</option>
+                        <option value="143000">Psi Capricorni</option>
+                        <option value="143300">Eta Cephei</option>
+                        <option value="143400">Iota Microscopii</option>
+                        <option value="143900">31 Vulpeculae</option>
+                        <option value="145400">Chi Capricorni</option>
+                        <option value="146300">AX Microscopii</option>
+                        <option value="146800">Alpha Cephei</option>
+                        <option value="147400">Gamma Pavonis</option>
+                        <option value="176300">53 Eridani</option>
+                        <option value="176600">Alpha Caeli</option>
+                        <option value="177200">9 Aurigae</option>
+                        <option value="177300">104 Tauri</option>
+                        <option value="177500">Capella, The Goat Star</option>
+                        <option value="177503">Capella H</option>
+                        <option value="177504">Capella H</option>
+                        <option value="148800">Nu Octantis</option>
+                        <option value="149100">Gamma Capricorni</option>
+                        <option value="149500">HN Pegasi</option>
+                        <option value="149700">Delta Capricorni</option>
+                        <option value="149800">AY Indi</option>
+                        <option value="150700">15 pegasi</option>
+                        <option value="150800">Mu Capricorni</option>
+                        <option value="151800">Epsilon Indi</option>
+                        <option value="152200">Iota Pegasi</option>
+                        <option value="152300">Alpha Gruis</option>
+                        <option value="152600">Tau Piscis Austrini</option>
+                        <option value="152800">Theta Pegasi</option>
+                        <option value="159900">Gamma Tucanae</option>
+                        <option value="160200">Phi Gruis</option>
+                        <option value="160300">Viln 82 no 35</option>
+                        <option value="160600">Gamma Sculptoris</option>
+                        <option value="161000">Viln 82 no 55</option>
+                        <option value="161500">ZZ Piscis</option>
+                        <option value="162000">Viln 82 no 70</option>
+                        <option value="163000">Lambda Andromedae</option>
+                        <option value="163700">Gamma Cephei</option>
+                        <option value="163800">Iota Piscis</option>
+                        <option value="165100">II Pegasi</option>
+                        <option value="166900">V547 Cassiopeiae</option>
+                        <option value="167000">Beta(3) Tucanae</option>
+                        <option value="167100">13 Ceti</option>
+                        <option value="167800">Eta Cassiopeiae</option>
+                        <option value="168300">Mu Cassiopeiae</option>
+                        <option value="168600">37 Ceti</option>
+                        <option value="168800">Kappa Tucanae</option>
+                        <option value="168802">Kappa(1) Tucanae</option>
+                        <option value="74200">Merak, Beta Ursae Majoris</option>
+                        <option value="75400">Beta Crateris</option>
+                        <option value="75800">Delta Leonis</option>
+                        <option value="76400">SZ Ursae Majoris</option>
+                        <option value="77900">89 Leonis</option>
+                        <option value="78600">61 Ursae Majoris</option>
+                        <option value="80100">FI Virginis</option>
+                        <option value="80300">Denebola, The Lion's Tail</option>
+                        <option value="175603">DY Eridani</option>
+                        <option value="175600">Keid</option>
+                        <option value="176100">Aldebaran</option>
+                        <option value="42500">Alpha Mensae</option>
+                        <option value="42600">71 Orionis</option>
+                        <option value="42700">74 Orionis</option>
+                        <option value="43100">Nu(2) Canis Majoris</option>
+                        <option value="91100">57 Virginis</option>
+                        <option value="91200">59 Virginis</option>
+                        <option value="91400">61 Virginis</option>
+                        <option value="91800">Iota Centauri</option>
+                        <option value="92300">80 Ursae Majoris, Alcor</option>
+                        <option value="92600">69 Virginis</option>
+                        <option value="92700">70 Virginis</option>
+                        <option value="93600">EQ Virginis</option>
+                        <option value="93700">Zeta Virginis</option>
+                        <option value="96000">Eta Boötis</option>
+                        <option value="96800">Pi Hydrae</option>
+                        <option value="96900">Theta Centauri</option>
+                        <option value="97200">12 Boötis</option>
+                        <option value="97500">50 Hydrae</option>
+                        <option value="98100">Arcturus, Alpha Boötis</option>
+                        <option value="98200">Iota Virginis</option>
+                        <option value="98300">Lambda Boötis</option>
+                        <option value="98800">18 Boötis</option>
+                        <option value="101000">Sigma Boötis</option>
+                        <option value="101700">Mu Virginis</option>
+                        <option value="101900">Omicron Boötis</option>
+                        <option value="102500">Alpha(1) Librae</option>
+                        <option value="102700">Alpha(2) Librae,</option>
+                        <option value="103400">16 Librae</option>
+                        <option value="104800">45 Boötis</option>
+                        <option value="105200">23 Librae</option>
+                        <option value="105400">Beta Circini</option>
+                        <option value="105900">Nu(2) Lupi</option>
+                        <option value="106000">Nu(1) Lupi</option>
+                        <option value="107300">Gamma Librae</option>
+                        <option value="169600">P Eridani</option>
+                        <option value="169700">Chi Ceti</option>
+                        <option value="169900">Chi Eridani</option>
+                        <option value="170700">66 Ceti</option>
+                        <option value="171700">Epsilon Ceti</option>
+                        <option value="171800">Gamma Ceti</option>
+                        <option value="171900">Theta Persei</option>
+                        <option value="173200">Alpha Fornacis</option>
+                        <option value="173400">94 Ceti</option>
+                        <option value="174500">Kappa Reticuli</option>
+                        <option value="16300">Mu Fornacis</option>
+                        <option value="16900">Delta Trianguli</option>
+                        <option value="17600">Kappa Fornacis</option>
+                        <option value="17700">Delta Hydri</option>
+                        <option value="18200">29 Arietis</option>
+                        <option value="18600">CC Eridani</option>
+                        <option value="19200">Lambda(2) Fornacis</option>
+                        <option value="20000">12 Persei</option>
+                        <option value="20200">Iota Horologii</option>
+                        <option value="20500">Mu Ceti</option>
+                        <option value="20600">Tau(1) Eridani</option>
+                        <option value="21100">VY Arietis</option>
+                        <option value="22200">Epsilon Fornacis</option>
+                        <option value="22300">Tau(3) Eridani</option>
+                        <option value="22900">Iota Persei</option>
+                        <option value="23900">Zeta(1) Reticuli</option>
+                        <option value="24000">Kappa Ceti</option>
+                        <option value="24100">Zeta(2) Reticuli</option>
+                        <option value="24200">82 Eridani</option>
+                        <option value="25100">Epsilon Eridani</option>
+                        <option value="25500">10 Tauri</option>
+                        <option value="26100">Delta Eridani</option>
+                        <option value="26800">Beta Reticuli</option>
+                        <option value="27000">Tau(6) Eridani</option>
+                        <option value="27300">vB 170 Hyades</option>
+                        <option value="28900">39 Tauri</option>
+                        <option value="2200">Theta Sculptoris</option>
+                        <option value="6400">64 Piscis</option>
+                        <option value="29300">50 Persei</option>
+                        <option value="30300">Gamma Doradus</option>
+                        <option value="30400">Epsilon Reticuli</option>
+                        <option value="32600">Beta Caeli</option>
+                        <option value="33000">58 Eridani</option>
+                        <option value="33200">Pi(3) Orionis</option>
+                        <option value="34700">Eta(1) Pictoris</option>
+                        <option value="35100">Zeta Doradus</option>
+                        <option value="14700">The Sign, Beta Arietis, Sheratan</option>
+                        <option value="15200">Alpha Hydri</option>
+                        <option value="15700">Alpha Arietis, The Head of the Sheep</option>
+                        <option value="16200">Eta Arietis</option>
+                        <option value="107800">Alpha Serpentis</option>
+                        <option value="108000">Lambda Serpentis</option>
+                        <option value="108300">Epsilon Serpentis</option>
+                        <option value="108600">39 Serpentis</option>
+                        <option value="108700">Chi Herculis</option>
+                        <option value="108900">Lambda Coronae Borealis</option>
+                        <option value="109000">Gamma Serpentis</option>
+                        <option value="109800">49 Librae</option>
+                        <option value="109900">Rho Coronae Borealis</option>
+                        <option value="110100">Theta Draconis</option>
+                        <option value="110500">Delta Normae</option>
+                        <option value="111700">18 Scorpii</option>
+                        <option value="112000">Epsilon Ophiuchi</option>
+                        <option value="112100">CR Draconis</option>
+                        <option value="112300">Gamma(2) Normae</option>
+                        <option value="112700">Sigma Serpentis</option>
+                        <option value="113200">Zeta Trianguli Australis</option>
+                        <option value="113600">Gamma Apodis</option>
+                        <option value="114600">12 Ophiuchi</option>
+                        <option value="116200">DN Draconis</option>
+                        <option value="117100">Zeta Arae</option>
+                        <option value="117400">19 Draconis</option>
+                        <option value="117800">Epsilon(2) Arae</option>
+                        <option value="119200">Eta Scorpii</option>
+                        <option value="120600">72 Herculis</option>
+                        <option value="121000">44 Ophiuchi</option>
+                        <option value="121700">Alpha Ophiuchi</option>
+                        <option value="122000">Pi Arae</option>
+                        <option value="122500">Lambda Arae</option>
+                        <option value="122900">Omega Draconis</option>
+                        <option value="123100">Mu Arae</option>
+                        <option value="123200">58 Ophiuchi</option>
+                        <option value="125100">Zeta Serpentis</option>
+                        <option value="125800">Iota Pavonis</option>
+                        <option value="126400">36 Draconis</option>
+                        <option value="127300">Eta Serpentis</option>
+                        <option value="127700">Lambda Sagittarii</option>
+                        <option value="128500">V774 Herculis</option>
+                        <option value="204800">36 Ophiuchi</option>
+                        <option value="35200">13 Orionis</option>
+                        <option value="35400">Beta Eridani</option>
+                        <option value="81700">Eta Crucis</option>
+                        <option value="81800">Alpha Corvi</option>
+                        <option value="82900">12 Virginis</option>
+                        <option value="83100">Delta Ursae Majoris</option>
+                        <option value="85200">Eta Corvi</option>
+                        <option value="85500">Beta Canum Venaticorum</option>
+                        <option value="86900">10 Canum Venaticorum</option>
+                        <option value="88500">38 Virginis</option>
+                        <option value="89300">DT Virginis</option>
+                        <option value="89600">40 Comae Berenices</option>
+                        <option value="90100">RS Canum Venaticorum</option>
+                        <option value="90300">Beta Comae Berenices</option>
+                        <option value="43500">Xi Geminorum</option>
+                        <option value="43700">Psi(5) Aurigae</option>
+                        <option value="44200">Alpha Pictoris</option>
+                        <option value="44800">37 Geminorum</option>
+                        <option value="50400">QY Aurigae</option>
+                        <option value="50700">I Puppis</option>
+                        <option value="52000">22 Lyncis</option>
+                        <option value="53400">YZ Canis Minoris</option>
+                        <option value="53600">Pollux</option>
+                        <option value="56100">B Carinae</option>
+                        <option value="57300">Chi Cancri</option>
+                        <option value="57700">Alpha Chamaeleontis</option>
+                        <option value="58100">1 Hydrae</option>
+                        <option value="58400">Beta Volantis</option>
+                        <option value="59200">Pi(1) Ursae Majoris</option>
+                        <option value="61400">TY Pyxidis</option>
+                        <option value="61700">Alpha Volantis</option>
+                        <option value="61900">15 Ursae Majoris</option>
+                        <option value="62200">75 Cancri</option>
+                        <option value="62800">16 Ursae Minoris</option>
+                        <option value="63000">18 Ursae Majoris</option>
+                        <option value="63100">K Velorum</option>
+                        <option value="64600">23 Ursae Majoris</option>
+                        <option value="64900">24 Ursae Majoris</option>
+                        <option value="66000">15 Leonis Minoris</option>
+                        <option value="66800">19 Leonis Minoris</option>
+                        <option value="67100">DH Leonis</option>
+                        <option value="67200">20 Leonis Minoris</option>
+                        <option value="67900">21 Leonis Minoris</option>
+                        <option value="69600">AD Leonis</option>
+                        <option value="69700">40 Leonis</option>
+                        <option value="70600">I Carinae</option>
+                        <option value="71200">36 Ursae Majoris</option>
+                        <option value="73900">47 Ursae Majoris</option>
+                        <option value="35500">68 Eridani</option>
+                        <option value="35800">Kapteyn's Star</option>
+                        <option value="36300">Lambda Aurigae</option>
+                        <option value="36900">111 Tauri</option>
+                        <option value="37800">V371 Orionis</option>
+                        <option value="38500">Nu(2) Columbae</option>
+                        <option value="38600">49 Orionis</option>
+                        <option value="39300">Pi Mensae</option>
+                        <option value="39600">Zeta Leporis</option>
+                        <option value="40000">Beta Pictoris</option>
+                        <option value="40900">Eta Leporis</option>
+                        <option value="41000">Beta Aurigae</option>
+                        <option value="80400">Beta Virginis</option>
+                        <option value="81500">Omicron Virginis</option>
+                        <option value="1000">Sol, The Sun</option>
+                        <option value="200">Alpha Centauri</option>
+                        <option value="203">Proxima Centauri</option>
+                        <option value="300">Barnard's Star</option>
+                        <option value="400">CN Leonis</option>
+                        <option value="600">Sirius, The Dog Star</option>
+                        <option value="1800">Beta Cassiopeiae</option>
+                        <option value="1900">Epsilon Phoenicis</option>
+                        <option value="2000">6 Ceti, Viln 82 no 157</option>
+                        <option value="3100">Zeta Tucanae</option>
+                        <option value="3600">9 Ceti</option>
+                        <option value="4000">Beta Hydri</option>
+                        <option value="4100">Kappa Phoenicis</option>
+                        <option value="4800">54 Piscis</option>
+                        <option value="5300">FF Andromedae</option>
+                        <option value="5500">Beta Ceti</option>
+                        <option value="6100">18 Ceti</option>
+                        <option value="6500">van Maanen's Star</option>
+                        <option value="6700">Phi(2) Ceti</option>
+                        <option value="9700">Eta Ceti</option>
+                        <option value="9900">Beta Andromedae</option>
+                        <option value="10100">YZ Ceti</option>
+                        <option value="10500">Nu Phoenicis</option>
+                        <option value="12000">Upsilon Andromedae</option>
+                        <option value="13000">107 Piscis</option>
+                        <option value="13600">Tau Ceti, 52 Ceti</option>
+                        <option value="14400">Alpha Trianguli</option>
+                        <option value="178300">Riepe's Double</option>
+                        <option value="178400">Gamma Leporis</option>
+                        <option value="178500">Chi(1) Orionis</option>
+                        <option value="179500">V577 Monoceri</option>
+                        <option value="180200">38 Geminorum</option>
+                        <option value="180900">Lambda Geminorum</option>
+                        <option value="181100">Delta Geminorum</option>
+                        <option value="181200">Rho Geminorum</option>
+                        <option value="181400">VV Lyncis</option>
+                        <option value="181700">Castor, The Horseman</option>
+                        <option value="181705">YY Geminorum</option>
+                        <option value="181900">Procyon, The Little Dog Star</option>
+                        <option value="182500">9 Puppis</option>
+                        <option value="183500">18 Puppis</option>
+                        <option value="183900">CU Cancri</option>
+                        <option value="184600">Delta Velorum</option>
+                        <option value="184800">Rho(1) Cancri</option>
+                        <option value="185200">Iota Ursae Majoris</option>
+                        <option value="185300">10 Ursae Majoris</option>
+                        <option value="185600">Sigma(2) Ursae Majoris</option>
+                        <option value="185900">Pi(1) Cancri</option>
+                        <option value="186900">Tau(1) Hydrae</option>
+                        <option value="187100">Psi Velorum</option>
+                        <option value="187300">Theta Ursae Majoris</option>
+                        <option value="187500">11 Leonis Minoris</option>
+                        <option value="187600">Theta Antliae</option>
+                        <option value="188300">39 Leonis</option>
+                        <option value="189600">Chi(1) Hydrae</option>
+                        <option value="189702">WX Ursae Majoris</option>
+                        <option value="190500">Xi Ursae Majoris</option>
+                        <option value="190600">SZ Crateris</option>
+                        <option value="191100">83 Leonis</option>
+                        <option value="191200">88 Leonis</option>
+                        <option value="191600">Iota Crateris</option>
+                        <option value="194400">Porrima</option>
+                        <option value="195400">Alpha Comae Berenices</option>
+                        <option value="196100">Mizar, The Horse</option>
+                        <option value="197100">Tau Boötis</option>
+                        <option value="198200">Iota Boötis</option>
+                        <option value="198600">Theta Boötis</option>
+                        <option value="198800">Phi Virginis</option>
+                        <option value="199000">Alpha Circini</option>
+                        <option value="199300">54 Hydrae</option>
+                        <option value="199600">Xi Boötis</option>
+                        <option value="199800">CE Boötis</option>
+                        <option value="200200">i Boötis</option>
+                        <option value="200400">Zeta Lupi</option>
+                        <option value="200900">Eta Coronae Borealis</option>
+                        <option value="201000">Mu Boötis</option>
+                        <option value="201002">Mu(2) Boötis</option>
+                        <option value="201600">Psi Serpentis</option>
+                        <option value="201800">Beta Trianguli Australis</option>
+                        <option value="202200">Xi Scorpii</option>
+                        <option value="202700">Sigma Coronae Borealis</option>
+                        <option value="203100">Eta Ursae Minoris</option>
+                        <option value="203300">Eta Draconis</option>
+                        <option value="203800">Zeta Herculis</option>
+                        <option value="204300">Mu Draconis</option>
+                        <option value="204400">Eta Ophiuchi, Sabik</option>
+                        <option value="119700">Delta Herculis</option>
+                        <option value="205200">V645 Herculis</option>
+                        <option value="205300">Xi Ophiuchi</option>
+                        <option value="206000">26 Draconis</option>
+                        <option value="206500">Psi(1) Draconis</option>
+                        <option value="206600">Mu Herculis</option>
+                        <option value="206800">Tau Ophiuchi</option>
+                        <option value="206900">70 Ophiuchi</option>
+                        <option value="207000">72 Ophiuchi</option>
+                        <option value="207100">99 Herculis</option>
+                        <option value="207300">Chi Draconis</option>
+                        <option value="208400">Gamma Coronae Australis</option>
+                        <option value="208500">Zeta Aquilae</option>
+                        <option value="209700">Theta Cygni</option>
+                        <option value="209900">16 Cygni</option>
+                        <option value="210300">17 Cygni</option>
+                        <option value="210400">Omicron Aquilae</option>
+                        <option value="210500">V1581 Cygni</option>
+                        <option value="210600">Beta Aquilae</option>
+                        <option value="211500">Rho Capricorni</option>
+                        <option value="212400">Epsilon Cygni</option>
+                        <option value="212700">V1396 Cygni</option>
+                        <option value="213000">Eta Capricorni</option>
+                        <option value="213300">61 Cygni, The Flying Star</option>
+                        <option value="213500">Delta Equulei</option>
+                        <option value="213600">Tau Cygni</option>
+                        <option value="214000">Theta Indi</option>
+                        <option value="214700">Mu Cygni</option>
+                        <option value="216100">Nu Indi</option>
+                        <option value="216500">53 Aquarii</option>
+                        <option value="216600">34 Pegasi</option>
+                        <option value="217200">FK Aquarii</option>
+                        <option value="217600">Xi Pegasi</option>
+                        <option value="217700">Gamma Piscis Austrini</option>
+                        <option value="217800">Sigma Pegasi</option>
+                        <option value="218100">2 Andromedae</option>
+                        <option value="218300">89 Aquarii</option>
+                        <option value="218400">KZ Andromedae</option>
+                        <option value="218600">Psi(1) Aquarii</option>
+                        <option value="218900">94 Aquarii</option>
+                        <option value="218902">Viln 82 no 44</option>
+                        <option value="219100">EQ Pegasi</option>
+                        <option value="219500">Omega(2) Aquarii</option>
+                        <option value="220200">85 Pegasi</option>
+                        <option value="220400">Regulus</option>
+                        <option value="220500">Algol, The Demon Star</option>
+                        <option value="220600">Achernar</option>
+                        <option value="220700">Canopus</option>
+                        <option value="220800">Antares</option>
+                        <option value="220900">Spica</option>
+                        <option value="221000">Polaris, The North Star</option>
+                        <option value="221100">Bellatrix, The Amazon Star</option>
+                        <option value="221200">Betelgeuse</option>
+                        <option value="221300">Rigel</option>
+                        <option value="221400">Deneb</option>
+                        <option value="221500">Epsilon Aurigae</option>
+                        <option value="221600">Cygnus X-1</option>
+                        <option value="217100">EZ Aquarii</option>
+                        <option value="111300">14 Herculis</option>
+                        <option value="222600">Cor Caroli</option>
+                        <option value="222601">Alpha(2) Canum Venaticorum</option>
+                        <option value="222602">Alpha(1) Canum Venaticorum</option>
+                        <option value="58600">DX Cancri</option>
+                        <option value="222800">MQ Serpentis</option>
+                        <option value="222900">Alpha Persei, Mirfak</option>
+                        <option value="223000">Adhara</option>
+                        <option value="223100">Alphard</option>
+                        <option value="223200">Beta Cygni</option>
+                        <option value="223203">Beta(2) Cygni</option>
+                        <option value="223300">Delta Serpentis</option>
+                        <option value="223400">Dubhe, The Back of the Great Bear</option>
+                        <option value="223500">Epsilon Pegasi</option>
+                        <option value="223600">Gamma Draconis</option>
+                        <option value="21600">EP Eridani</option>
+                        <option value="64800">LQ Hydrae</option>
+                        <option value="223900">Teegarden's Star</option>
+                        <option value="224400">AB Doradus</option>
+                        <option value="224500">V491 Persei</option>
+                        <option value="51800">Luyten's Star</option>
+                        <option value="224700">Wei</option>
+                        <option value="105800">HO Librae</option>
+                    </select>
+                    <br>
+                    <select class="form-control" id="exampleFormControlSelect1" onchange="locate(this)">
+                        <option value="">Select Messier Object</option>
+                        <optgroup label="Andromeda">
+                            <option value="31">NGC 224 Andromeda Galaxy - Spiral Galaxy</option>
+                            <option value="32">NGC 221 Satellite of M31 - Elliptical Galaxy</option>
+                            <option value="110">NGC 205 Satellite of M31 - Elliptical Galaxy</option>
+                        </optgroup>
+                        <optgroup label="Aquarius">
+                            <option value="2">NGC 7089 - Globular Cluster</option>
+                            <option value="72">NGC 6981 - Globular Cluster</option>
+                            <option value="73">NGC 6994 Group of 4 stars - Group/Asterism</option>
+                        </optgroup>
+                        <optgroup label="Auriga">
+                            <option value="36">NGC 1960 - Open Cluster</option>
+                            <option value="37">NGC 2099 - Open Cluster</option>
+                            <option value="38">NGC 1912 - Open Cluster</option>
+                        </optgroup>
+                        <optgroup label="Cancer">
+                            <option value="44">NGC 2632 Beehive Cluster (Praesepe) - Open Cluster</option>
+                            <option value="67">NGC 2682 - Open Cluster</option>
+                        </optgroup>
+                        <optgroup label="Canes Venatici">
+                            <option value="3">NGC 5272 - Globular Cluster</option>
+                            <option value="51">NGC 5194 Whirlpool Galaxy - Spiral Galaxy</option>
+                            <option value="63">NGC 5055 Sunflower Galaxy - Spiral Galaxy</option>
+                            <option value="94">NGC 4736 - Spiral Galaxy</option>
+                            <option value="106">NGC 4258 - Spiral Galaxy</option>
+                        </optgroup>
+                        <optgroup label="Canis Major">
+                            <option value="41">NGC 2287 - Open Cluster</option>
+                        </optgroup>
+                        <optgroup label="Capricornus">
+                            <option value="30">NGC 7099 - Globular Cluster</option>
+                        </optgroup>
+                        <optgroup label="Cassiopeia">
+                            <option value="52">NGC 7654 - Open Cluster</option>
+                            <option value="103">NGC 581 - Open Cluster</option>
+                        </optgroup>
+                        <optgroup label="Cetus">
+                            <option value="77">NGC 1068 Cetus A - Spiral Galaxy</option>
+                        </optgroup>
+                        <optgroup label="Coma Berenices">
+                            <option value="53">NGC 5024 - Globular Cluster</option>
+                            <option value="64">NGC 4826 Blackeye Galaxy - Spiral Galaxy</option>
+                            <option value="85">NGC 4382 - Lenticular (S0) Galaxy</option>
+                            <option value="88">NGC 4501 - Spiral Galaxy</option>
+                            <option value="91">NGC 4548 - Spiral Galaxy</option>
+                            <option value="98">NGC 4192 - Spiral Galaxy</option>
+                            <option value="99">NGC 4254 - Spiral Galaxy</option>
+                            <option value="100">NGC 4321 - Spiral Galaxy</option>
+                        </optgroup>
+                        <optgroup label="Cygnus">
+                            <option value="29">NGC 6913 - Open Cluster</option>
+                            <option value="39">NGC 7092 - Open Cluster</option>
+                        </optgroup>
+                        <optgroup label="Draco">
+                            <option value="102">NGC 5866 Spindle Galaxy - Lenticular (S0) Galaxy</option>
+                        </optgroup>
+                        <optgroup label="Gemini">
+                            <option value="35">NGC 2168 - Open Cluster</option>
+                        </optgroup>
+                        <optgroup label="Hercules">
+                            <option value="13">NGC 6205 Hercules Globular Cluster - Globular Cluster</option>
+                            <option value="92">NGC 6341 - Globular Cluster</option>
+                        </optgroup>
+                        <optgroup label="Hydra">
+                            <option value="48">NGC 2548 - Open Cluster</option>
+                            <option value="68">NGC 4590 - Globular Cluster</option>
+                            <option value="83">NGC 5236 Southern Pinwheel Galaxy - Spiral Galaxy</option>
+                        </optgroup>
+                        <optgroup label="Leo">
+                            <option value="65">NGC 3623 - Spiral Galaxy</option>
+                            <option value="66">NGC 3627 - Spiral Galaxy</option>
+                            <option value="95">NGC 3351 - Spiral Galaxy</option>
+                            <option value="96">NGC 3368 - Spiral Galaxy</option>
+                            <option value="105">NGC 3379 - Elliptical Galaxy</option>
+                        </optgroup>
+                        <optgroup label="Lepus">
+                            <option value="79">NGC 1904 - Globular Cluster</option>
+                        </optgroup>
+                        <optgroup label="Lyra">
+                            <option value="56">NGC 6779 - Globular Cluster</option>
+                            <option value="57">NGC 6720 Ring Nebula - Planetary Nebula</option>
+                        </optgroup>
+                        <optgroup label="Monocerus">
+                            <option value="50">NGC 2323 - Open Cluster</option>
+                        </optgroup>
+                        <optgroup label="Ophiucus">
+                            <option value="9">NGC 6333 - Globular Cluster</option>
+                            <option value="10">NGC 6254 - Globular Cluster</option>
+                            <option value="12">NGC 6218 - Globular Cluster</option>
+                            <option value="14">NGC 6402 - Globular Cluster</option>
+                            <option value="19">NGC 6273 - Globular Cluster</option>
+                            <option value="62">NGC 6266 - Globular Cluster</option>
+                            <option value="107">NGC 6171 - Globular Cluster</option>
+                        </optgroup>
+                        <optgroup label="Orion">
+                            <option value="42">NGC 1976 Great Orion Nebula - Diffuse Nebula</option>
+                            <option value="43">NGC 1982 de Mairan¹s Nebula - Diffuse Nebula</option>
+                            <option value="78">NGC 2068 - Diffuse Nebula</option>
+                        </optgroup>
+                        <optgroup label="Pegasus">
+                            <option value="15">NGC 7078 - Globular Cluster</option>
+                        </optgroup>
+                        <optgroup label="Perseus">
+                            <option value="34">NGC 1039 - Open Cluster</option>
+                            <option value="76">NGC 650 Little Dumbell,  Cork,  Butterfly Nebula - Planetary Nebula</option>
+                        </optgroup>
+                        <optgroup label="Pisces">
+                            <option value="74">NGC 628 - Spiral Galaxy</option>
+                        </optgroup>
+                        <optgroup label="Puppis">
+                            <option value="46">NGC 2437 - Open Cluster</option>
+                            <option value="47">NGC 2422 - Open Cluster</option>
+                            <option value="93">NGC 2447 - Open Cluster</option>
+                        </optgroup>
+                        <optgroup label="Sagitta">
+                            <option value="71">NGC 6838 - Globular Cluster</option>
+                        </optgroup>
+                        <optgroup label="Sagittarius">
+                            <option value="8">NGC 6523 Lagoon Nebula - Diffuse Nebula</option>
+                            <option value="17">NGC 6618 Omega,  Swan,  Horseshoe Nebula - Diffuse Nebula</option>
+                            <option value="18">NGC 6613 - Open Cluster</option>
+                            <option value="20">NGC 6514 Trifid Nebula - Diffuse Nebula</option>
+                            <option value="21">NGC 6531 - Open Cluster</option>
+                            <option value="22">NGC 6656 - Globular Cluster</option>
+                            <option value="23">NGC 6494 - Open Cluster</option>
+                            <option value="24">NGC 6603 Milky Way Patch - Star Cloud</option>
+                            <option value="25">IC 4725 - Open Cluster</option>
+                            <option value="28">NGC 6626 - Globular Cluster</option>
+                            <option value="54">NGC 6715 - Globular Cluster</option>
+                            <option value="55">NGC 6809 - Globular Cluster</option>
+                            <option value="69">NGC 6637 - Globular Cluster</option>
+                            <option value="70">NGC 6681 - Globular Cluster</option>
+                            <option value="75">NGC 6864 - Globular Cluster</option>
+                        </optgroup>
+                        <optgroup label="Scorpius">
+                            <option value="4">NGC 6121 - Globular Cluster</option>
+                            <option value="6">NGC 6405 Butterfly Cluster - Open Cluster</option>
+                            <option value="7">NGC 6475 Ptolemy¹s Cluster - Open Cluster</option>
+                            <option value="80">NGC 6093 - Globular Cluster</option>
+                        </optgroup>
+                        <optgroup label="Scutum">
+                            <option value="11">NGC 6705 Wild Duck Cluster - Open Cluster</option>
+                            <option value="26">NGC 6694 - Open Cluster</option>
+                        </optgroup>
+                        <optgroup label="Serpens Caput">
+                            <option value="5">NGC 5904 - Globular Cluster</option>
+                        </optgroup>
+                        <optgroup label="Serpens Claudia">
+                            <option value="16">NGC 6611 Eagle Nebula Cluster - Open Cluster</option>
+                        </optgroup>
+                        <optgroup label="Taurus">
+                            <option value="1">NGC 1952 Crab Nebula - Supernova Remnant</option>
+                            <option value="45">Pleiades,  Subaru,  Seven Sisters - Open Cluster</option>
+                        </optgroup>
+                        <optgroup label="Triangulum">
+                            <option value="33">NGC 598 Triangulum/Pinwheel Galaxy - Spiral Galaxy</option>
+                        </optgroup>
+                        <optgroup label="Ursa Major">
+                            <option value="40">Winecke 4 - Double Star</option>
+                            <option value="81">NGC 3031 Bode¹s Galaxy - Spiral Galaxy</option>
+                            <option value="82">NGC 3034 Cigar Galaxy - Irregular Galaxy</option>
+                            <option value="97">NGC 3587 Owl Nebula - Planetary Nebula</option>
+                            <option value="101">NGC 5457 Pinwheel Galaxy - Spiral Galaxy</option>
+                            <option value="108">NGC 3556 - Spiral Galaxy</option>
+                            <option value="109">NGC 3992 - Spiral Galaxy</option>
+                        </optgroup>
+                        <optgroup label="Virgo">
+                            <option value="49">NGC 4472 - Elliptical Galaxy</option>
+                            <option value="58">NGC 4579 - Spiral Galaxy</option>
+                            <option value="59">NGC 4621 - Elliptical Galaxy</option>
+                            <option value="60">NGC 4649 - Elliptical Galaxy</option>
+                            <option value="61">NGC 4303 - Spiral Galaxy</option>
+                            <option value="84">NGC 4374 - Lenticular (S0) Galaxy</option>
+                            <option value="86">NGC 4406 - Lenticular (S0) Galaxy</option>
+                            <option value="87">NGC 4486 Virgo A - Elliptical Galaxy</option>
+                            <option value="89">NGC 4552 - Elliptical Galaxy</option>
+                            <option value="90">NGC 4569 - Spiral Galaxy</option>
+                            <option value="104">NGC 4594 Sombrero Galaxy - Spiral Galaxy</option>
+                        </optgroup>
+                        <optgroup label="Vulpecula">
+                            <option value="27">NGC 6853 Dumbbell Nebula - Planetary Nebula</option>
+                        </optgroup>
+                    </select>
+                    <div>{{Position}}</div>
+                </div>
+            {% else %}
+                <div class="col">
+                    <button type="button" class="btn btn-danger btn-block" onclick="getLocationData()">Set date & location</button>
+                </div>
+            {% endif %}
+        {% endblock content %}
+        <div class="col-1 text-right"><a class='text-danger' href='/dir/right'><i class="fas fa-angle-right s_dir"></i></a></div>
+    </div>
+  </div>
+
+  <div class="flex-column justify-content-center px-2">
+    <div class="row">
+        <div class="col-1"></div>
+        <div class="col text-center"><a class='text-danger' href='/dir/down'><i class="fas fa-angle-down s_dir"></i></a></div>
+        <div class="col-1"></div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
