@@ -23,6 +23,8 @@ class Telescope:
         self.altitude_m = 0  # top angle in minutes
         self.azimuth_m = 0  # bottom angle in minutes (24355 => facing south)
 
+        self.manual_steps = 1
+
         gpio.setmode(gpio.BCM)
         gpio.setwarnings(False)
 
@@ -132,5 +134,39 @@ class Telescope:
             # self.turn_lr(az)
             return mo.get_object_name()
 
+    def looking_at(self, mo, dt):
+
+        li = LocationInfo(mo.get_dec_degree(), mo.get_dec_minute(), mo.get_ra_hour(), mo.get_ra_minute(),
+                          self.dms_latitude[0], self.dms_latitude[1], self.dms_longitude[0], self.dms_longitude[1],
+                          dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second)
+
+        alt, az = CoordinateConversion.convert(li)
+
+        if alt < 0:
+            return 'Object is below horizon.'
+        else:
+            self.altitude_m = alt
+            self.azimuth_m = az
+            return mo.get_object_name()
+
     def get_initialized(self):
         return self.initialized
+
+    def turn_left(self):
+        gpio.output(self.pin_dir_bottom, True)
+        self.turn_motor(self.pin_stp_bottom, self.manual_steps * 2, 'B')
+
+    def turn_right(self):
+        gpio.output(self.pin_dir_bottom, False)
+        self.turn_motor(self.pin_stp_bottom, self.manual_steps * 2, 'B')
+
+    def turn_up(self):
+        gpio.output(self.pin_dir_top, False)
+        self.turn_motor(self.pin_stp_top, self.manual_steps * 2, 'T')
+
+    def turn_down(self):
+        gpio.output(self.pin_dir_top, True)
+        self.turn_motor(self.pin_stp_top, self.manual_steps * 2, 'T')
+
+    def set_manual_steps(self, steps):
+        self.manual_steps = steps
