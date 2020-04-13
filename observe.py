@@ -1,5 +1,5 @@
 from subprocess import call
-from flask import Flask, render_template
+from flask import Flask, render_template, jsonify
 from CTelescope import Telescope
 from sky_object_data import stars, messier_objects
 from co import CelestialObject
@@ -18,20 +18,13 @@ def index():
     return render_template('index.html', **template_data)
 
 
-@app.route('/iso/<iso>')
-def set_iso(iso):
-
-    t.set_iso(int(iso))
-    template_data['init'] = t.get_initialized()
-    return render_template('index.html', **template_data)
-
-
 @app.route('/steps/<steps>')
 def set_steps(steps):
 
     t.set_manual_steps(int(steps))
-    template_data['init'] = t.get_initialized()
-    return render_template('index.html', **template_data)
+    return jsonify({
+        "message": 'Steps set to ' + steps,
+    })
 
 
 @app.route('/exit')
@@ -46,48 +39,44 @@ def settime(dt):  # 45.801007399999996 15.1672683;2020-2-20 20:19:0
     params = dt.split(';')
     t.set_location(params[0])
     call('sudo date -s "'+params[1]+'"', shell=True)
-    template_data['init'] = t.get_initialized()
-    return render_template('index.html', **template_data)
+
+    return jsonify({'message': 'Location & time set: ' + dt})
 
 
 @app.route('/lookingAt/<param>')
 def looking_at(param):
     # param ~ '72'
 
-    template_data['init'] = t.get_initialized()
-
     p_obj_id = int(param)  # get object id
 
     # get datetime data
     dt = datetime.datetime.now()
 
     mo = CelestialObject(p_obj_id)
-    template_data['Position'] = t.looking_at(mo, dt)
 
-    return render_template('index.html', **template_data)
+    return jsonify({
+        "message": 'Looking at ' + t.looking_at(mo, dt),
+    })
 
 
 @app.route('/locate/<param>')
 def locate(param):
     # param ~ '72'
 
-    template_data['init'] = t.get_initialized()
-
     p_obj_id = int(param)  # get object id
 
     # get datetime data
     dt = datetime.datetime.now()
 
     mo = CelestialObject(p_obj_id)
-    template_data['Position'] = t.locate(mo, dt)
 
-    return render_template('index.html', **template_data)
+    return jsonify({
+        "message":  'Located ' + t.locate(mo, dt),
+    })
 
 
 @app.route('/dir/<dir>')
 def turn_scope(dir):
-
-    template_data['init'] = t.get_initialized()
 
     if dir == 'left':
         t.turn_left()
@@ -98,7 +87,9 @@ def turn_scope(dir):
     elif dir == 'down':
         t.turn_down()
 
-    return render_template('index.html', **template_data)
+    return jsonify({
+        "message": 'Turned ' + dir,
+    })
 
 
 if __name__ == '__main__':
