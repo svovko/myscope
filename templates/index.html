@@ -12,83 +12,23 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap-select.min.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/all.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/scope.css') }}">
 
   <script src="{{ url_for('static', filename='js/jquery.min.js') }}"></script>
   <script src="{{ url_for('static', filename='js/popper.min.js') }}"></script>
   <script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
   <script src="{{ url_for('static', filename='js/bootstrap-select.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/scope.js') }}"></script>
 
   <!--link rel="stylesheet" href="../static/css/bootstrap.min.css">
   <script src="../static/js/jquery.min.js"></script>
   <script src="../static/js/popper.min.js"></script>
   <script src="../static/js/bootstrap.min.js"></script>
   <link rel="stylesheet" href="../static/css/all.css"-->
-
-  <script>
-    $(function() {
-        $('.selectpicker').selectpicker();
-    });
-
-    function setDisplay()
-    {
-        setFullScreen();
-        setLandscapeMode();
-    }
-
-    function locate(selectObject)
-    {
-        var value = selectObject.value;
-        window.location.href = "https://192.168.64.107:5000/locate/" + value;
-    }
-
-    function initialize(position)
-    {
-        var d = new Date();
-        dt = d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate() + ' ' + // 2004-02-29
-             d.getHours() + ':' + d.getMinutes() + ':' + d.getSeconds(); // 16:21:42
-
-        var lat = position.coords.latitude;
-        var lon = position.coords.longitude;
-
-        window.location.href = "https://192.168.64.107:5000/initialize/"+lat+" "+lon+";"+dt;
-    }
-
-    function setFullScreen()
-    {
-      const promise = document.documentElement.requestFullscreen();
-      if (promise !== null)
-      {
-        promise.catch(() => {document.documentElement.requestFullscreen();});
-      }
-    }
-
-    function setLandscapeMode()
-    {
-        const promise = screen.orientation.lock('landscape');
-        if (promise !== null)
-        {
-            promise.catch(() => {screen.orientation.lock('landscape');});
-        }
-    }
-
-    function getLocationData()
-    {
-        if (navigator.geolocation) navigator.geolocation.getCurrentPosition(initialize);
-        else alert("Geolocation is not supported by this browser.");
-    }
-  </script>
-
-  <style>
-    html, body { height:100%; }
-    .bottom-right { border-radius: 50%; position: absolute; bottom: 20px; right: 20px; padding: 1em; }
-    .top-left { border-radius: 10%; position: absolute; top: 20px; left: 20px; }
-    .top-right { border-radius: 10%; position: absolute; top: 20px; right: 20px;  }
-   .s_dir {font-size: 2em;}
-  </style>
 </head>
 <body>
 
-<div class="top-left bg-secondary">
+<div class="top-left bg-dark">
 
       <div class="btn-group">
         <button type="button" class="btn dropdown-toggle text-danger" data-toggle="dropdown">
@@ -97,7 +37,7 @@
         <ul class="dropdown-menu" role="menu">
             {% set steps = [1, 5, 10, 20, 50, 100, 200] %}
             {% for step in steps %}
-            <li><a class="dropdown-item" href='/steps/{{ step }}'><i class="text-danger">{{ step }}x</i></a></li>
+            <li><a class="dropdown-item step" data-step="{{ step }}" href='#'><i class="text-danger">{{ step }}x</i></a></li>
             {% endfor %}
         </ul>
         <button type="button" class="btn text-danger" onclick="setDisplay()"><i class="fas fa-tv"></i></button>
@@ -105,7 +45,7 @@
 
 </div>
 
-<div class="top-right bg-secondary">
+<div class="top-right bg-dark">
     <div class="col text-right">
         <div class="btn-group">
         <button type="button" class="btn dropdown-toggle text-danger" data-toggle="dropdown">
@@ -123,57 +63,70 @@
   <div class="flex-column justify-content-center px-2">
     <div class="row">
         <div class="col-1"></div>
-        <div class="col text-center"><a class='text-danger' href='/dir/up'><i class="fas fa-angle-up s_dir"></i></a></div>
+        <div class="col text-center"><a class='text-danger direction' href='#' data-dir="up"><i class="fas fa-angle-up s_dir"></i></a></div>
         <div class="col-1"></div>
     </div>
   </div>
 
   <div class="flex-column justify-content-center px-2 d-flex flex-grow-1 h-100">
     <div class="row d-flex align-items-center">
-        <div class="col-1"><a class='text-danger' href='/dir/left'><i class="fas fa-angle-left s_dir"></i></a></div>
-        {% block content %}
-            {% if init == True %}
-                <div class="col">
-                    <select class="form-control selectpicker" onchange="locate(this)" data-live-search="true" data-show-subtext="true">
-                        <option value="">Select Star</option>
-                        {% for key, value in stars.items() %}
-                        <option value="{{ key }}" data-tokens="{{ value[0] }}">{{ value[0] }}</option>
-                        {% endfor %}
-                    </select>
-                    <br>
-                    <select class="form-control selectpicker" onchange="locate(this)" data-live-search="true" data-show-subtext="true">
-                        <option value="">Select Messier Object</option>
-                        {% set optGroup = 'blank' %}
-                        {% for key, value in mo.items() %}
-                        {%     if optGroup != 'blank' and optGroup != value[2] %}
-                                   </optgroup>
-                        {%     endif %}
+        <div class="col-1"><a class='text-danger direction' href='#' data-dir="left"><i class="fas fa-angle-left s_dir"></i></a></div>
+        <div class="col">
+              <div class="form-row d-none">
 
-                        {%     if optGroup != value[2] %}
-                        {%         set optGroup = value[2] %}
-                                   <optgroup label="{{ optGroup }}">
-                        {%      endif %}
-                                <option value="{{ key }}" data-tokens="{{ value[0].strip() }}">{{ value[0].strip() }} - {{ value[1] }}</option>
-                        {% endfor %}
-                        </optgroup>
+                  <div class="col">
+                      <div class="input-group input-group-sm mb-1">
+                          <select class="form-control form-control-sm bg-dark text-danger" data-live-search="true" data-show-subtext="true" id="ids1">
+                            <option value="">Select Star</option>
+                            {% for key, value in stars.items() %}
+                            <option value="{{ key }}" data-tokens="{{ value[0] }}">{{ value[0] }}</option>
+                            {% endfor %}
+                          </select>
+                          <div class="input-group-append">
+                              <button class="btn btn-danger" type="button" id="locateStar"><i class="fa fa-crosshairs"></i></button>
+                              <button class="btn btn-danger" type="button" id="lookingAtStar"><i class="fa fa-eye"></i></button>
+                         </div>
+                      </div>
+                  </div>
 
-                    </select>
-                    <div>{{Position}}</div>
-                </div>
-            {% else %}
-                <div class="col">
-                    <button type="button" class="btn btn-danger btn-block" onclick="getLocationData()">Set date & location</button>
-                </div>
-            {% endif %}
-        {% endblock content %}
-        <div class="col-1 text-right"><a class='text-danger' href='/dir/right'><i class="fas fa-angle-right s_dir"></i></a></div>
+                  <div class="col">
+                      <div class="input-group input-group-sm mb-1">
+                          <select class="form-control form-control-sm bg-dark text-danger" data-live-search="true" data-show-subtext="true" id="ids2">
+                                <option value="">Select Messier Object</option>
+                                {% set optGroup = 'blank' %}
+                                {% for key, value in mo.items() %}
+                                {%     if optGroup != 'blank' and optGroup != value[2] %}
+                                           </optgroup>
+                                {%     endif %}
+
+                                {%     if optGroup != value[2] %}
+                                {%         set optGroup = value[2] %}
+                                           <optgroup label="{{ optGroup }}">
+                                {%      endif %}
+                                        <option value="{{ key }}" data-tokens="{{ value[0].strip() }}">{{ value[0].strip() }} - {{ value[1] }}</option>
+                                {% endfor %}
+                                </optgroup>
+                          </select>
+                          <div class="input-group-append">
+                              <button class="btn btn-danger" type="button" id="locateMO"><i class="fa fa-crosshairs"></i></button>
+                         </div>
+                      </div>
+                      <div id="message" class="text-danger"></div>
+                  </div>
+
+              </div>
+            <button type="button" class="btn btn-danger btn-block" id="btn_location">Set date & location</button>
+        </div>
+
+
+        <div class="col-1 text-right"><a class='text-danger direction' href='#' data-dir="right"><i class="fas fa-angle-right s_dir"></i></a></div>
     </div>
   </div>
 
   <div class="flex-column justify-content-center px-2">
     <div class="row">
         <div class="col-1"></div>
-        <div class="col text-center"><a class='text-danger' href='/dir/down'><i class="fas fa-angle-down s_dir"></i></a></div>
+        <div class="col text-center"><a class='text-danger direction' href='#' data-dir="down"><i class="fas fa-angle-down s_dir"></i></a></div>
         <div class="col-1"></div>
     </div>
   </div>
