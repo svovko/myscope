@@ -1,14 +1,16 @@
 from subprocess import call
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, Response
 from CTelescope import Telescope
 from sky_object_data import stars, messier_objects
 from co import CelestialObject
+from CCamera import Camera
 import datetime
 
 
 app = Flask(__name__)
 
 t = Telescope(6, 16, 5, 13)
+c = Camera()
 template_data = {'title': 'My Scope', 'stars': stars, 'mo': messier_objects}
 
 
@@ -25,12 +27,6 @@ def set_steps(steps):
     return jsonify({
         "message": 'Steps set to ' + steps,
     })
-
-
-@app.route('/exit')
-def shutdown():
-
-    call('sudo poweroff', shell=True)
 
 
 @app.route('/initialize/<dt>')
@@ -90,6 +86,39 @@ def turn_scope(dir):
     return jsonify({
         "message": 'Turned ' + dir,
     })
+
+
+def gen():
+
+    while True:
+        frame = c.get_frame()
+        if frame is not None:
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+
+
+@app.route('/take_picture')
+def take_picture():
+
+    img = c.get_picture()
+    print('Took image:', img)
+    return jsonify({
+        "message": "Image saved to: <a href='static/pictures/"+img+"' target='_blank'>"+img+"</a>",
+    })
+
+
+@app.route('/video_feed')
+def video_feed():
+
+    c.start_streaming()
+    return Response(gen(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+
+@app.route('/exit')
+def shutdown():
+
+    c.stop_streaming()
+    call('sudo poweroff', shell=True)
 
 
 if __name__ == '__main__':
