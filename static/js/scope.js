@@ -12,6 +12,18 @@ $(function() {
 
     });
 
+    // take single image
+    $( "#takepicture" ).click(function() {
+
+         $.ajax({
+            url: '/take_picture',
+            success: function(data) {
+                $('#message').html(data['message']);
+            }
+        });
+
+    });
+
     // locate DSO
     $( "#locateMO" ).click(function() {
 
@@ -76,7 +88,6 @@ $(function() {
                 $('#message').html(data['message']);
                 $( "#btn_location" ).addClass( "d-none" );
                 $( ".form-row" ).removeClass("d-none").addClass( "d-block" );
-
             }
         });
       });
