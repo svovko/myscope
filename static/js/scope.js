@@ -1,5 +1,32 @@
 $(function() {
 
+    // open camera
+    $( "#openModal" ).click(function() {
+
+         $("#myModal").modal("show")
+         $.ajax({
+            url: '/start_camera',
+            success: function(data) {
+                $('#message').html(data['message']);
+            }
+        });
+
+    });
+
+    // close camera
+    $( "#closeModal" ).click(function() {
+
+         $("#myModal").modal("hide")
+         $.ajax({
+            url: '/stop_camera',
+            success: function(data) {
+                $('#message').html(data['message']);
+            }
+        });
+
+    });
+
+
     // locate stars
     $( "#locateStar" ).click(function() {
 
@@ -18,7 +45,7 @@ $(function() {
          $.ajax({
             url: '/take_picture',
             success: function(data) {
-                $('#message').html(data['message']);
+                $('#messageModal').html(data['message']);
             }
         });
 
@@ -67,6 +94,32 @@ $(function() {
             url: '/steps/' + $( this ).data('step'),
             success: function(data) {
                 $('#message').html(data['message']);
+            }
+        });
+
+    });
+
+
+    // set ISO
+    $( ".isoButton" ).click(function() {
+
+         $.ajax({
+            url: '/set_iso/' + $( this ).data('iso'),
+            success: function(data) {
+                $('#messageModal').html(data['message']);
+            }
+        });
+
+    });
+
+
+    // set exposure
+    $( ".expButton" ).click(function() {
+
+         $.ajax({
+            url: '/set_exp/' + $( this ).data('exp'),
+            success: function(data) {
+                $('#messageModal').html(data['message']);
             }
         });
 
