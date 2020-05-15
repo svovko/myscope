@@ -98,7 +98,7 @@ def gen():
 
 
 @app.route('/take_picture')
-def take_picture():
+def take_picture():  # tale zna crknit, če je kamera ugasnjena
 
     img = c.get_picture()
     print('Took image:', img)
@@ -110,15 +110,43 @@ def take_picture():
 @app.route('/video_feed')
 def video_feed():
 
-    c.start_streaming()
+    # c.start_streaming()
     return Response(gen(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+
+@app.route('/start_camera')
+def start_camera():
+
+    c.start_streaming()
+    return jsonify({"message": "Camera started", })
+
+
+@app.route('/stop_camera')
+def stop_camera():
+
+    c.stop_streaming()
+    return jsonify({"message": "Camera stopped", })
 
 
 @app.route('/exit')
 def shutdown():
 
-    c.stop_streaming()
+    c.quit()
     call('sudo poweroff', shell=True)
+
+
+@app.route('/set_iso/<iso>')
+def set_iso(iso):
+
+    c.set_iso(int(iso))
+    return jsonify({"message": "ISO set to: " + iso, })
+
+
+@app.route('/set_exp/<exp>')
+def set_exp(exp):
+
+    c.set_exp(int(exp))
+    return jsonify({"message": "Exposure set to: " + exp, })
 
 
 if __name__ == '__main__':
