@@ -25,6 +25,8 @@ class Telescope:
 
         self.manual_steps = 1
 
+        self.tracking = False
+
         gpio.setmode(gpio.BCM)
         gpio.setwarnings(False)
 
@@ -130,8 +132,7 @@ class Telescope:
 
             t1.join()
             t2.join()
-            # self.turn_ud(alt)
-            # self.turn_lr(az)
+
             return mo.get_object_name()
 
     def looking_at(self, mo, dt):

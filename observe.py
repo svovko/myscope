@@ -9,14 +9,14 @@ import datetime
 
 app = Flask(__name__)
 
-t = Telescope(6, 16, 5, 13)
+t = Telescope(6, 13, 5, 19)
 c = Camera()
 template_data = {'title': 'My Scope', 'stars': stars, 'mo': messier_objects}
 
 
 @app.route('/')
 def index():
-
+    c.start_streaming()
     return render_template('index.html', **template_data)
 
 
@@ -71,6 +71,7 @@ def locate(param):
     })
 
 
+# manual corrections
 @app.route('/dir/<dir>')
 def turn_scope(dir):
 
@@ -101,7 +102,7 @@ def gen():
 def take_picture():  # tale zna crknit, če je kamera ugasnjena
 
     img = c.get_picture()
-    print('Took image:', img)
+    #print('Took image:', img)
     return jsonify({
         "message": "Image saved to: <a href='static/pictures/"+img+"' target='_blank'>"+img+"</a>",
     })
@@ -114,18 +115,16 @@ def video_feed():
     return Response(gen(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
-@app.route('/start_camera')
-def start_camera():
+#@app.route('/start_camera')
+#def start_camera():
+#    c.start_streaming()
+#    return jsonify({"message": "Camera started", })
 
-    c.start_streaming()
-    return jsonify({"message": "Camera started", })
 
-
-@app.route('/stop_camera')
-def stop_camera():
-
-    c.stop_streaming()
-    return jsonify({"message": "Camera stopped", })
+#@app.route('/stop_camera')
+#def stop_camera():
+#    c.stop_streaming()
+#    return jsonify({"message": "Camera stopped", })
 
 
 @app.route('/exit')

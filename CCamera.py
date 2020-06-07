@@ -18,7 +18,8 @@ class Camera:
 
     def start_streaming(self):
         self.camera = picamera.PiCamera()
-        self.camera.image_effect = 'colorswap'
+        # self.camera.image_effect = 'colorswap'
+        self.camera.rotation = 90
         self.thread = threading.Thread(target=self.start_stream)
         self.thread.start()
 
@@ -32,10 +33,10 @@ class Camera:
         self.camera.capture('static/pictures/'+fname, use_video_port=False)
         return fname
 
-    def stop_streaming(self):
-        self.streaming = False
-        if self.thread is not None:
-            self.thread.join()
+    #def stop_streaming(self):
+    #    self.streaming = False
+    #    if self.thread is not None:
+    #        self.thread.join()
 
     def quit(self):
         self.streaming = False
@@ -52,11 +53,16 @@ class Camera:
         self.camera.iso = iso
 
     def set_exp(self, exp):
-        self.camera.shutter_speed = exp * 1000000
-        self.camera.framerate = Fraction(1, exp)
+
+        if exp == 0:
+            self.camera.shutter_speed = 0
+            self.camera.framerate = 0
+        else:
+            self.camera.shutter_speed = exp * 1000000
+            self.camera.framerate = Fraction(1, exp)
+
         self.camera.exposure_mode = 'off'
 
-    # possible TODO - if overheating - stop streaming
     def start_stream(self):
         self.streaming = True
         stream = io.BytesIO()
@@ -66,7 +72,6 @@ class Camera:
             self.frame = stream.read()
             stream.seek(0)
             stream.truncate()
-            # time.sleep(0.1)
 
             if not self.streaming:
                 self.camera.close()

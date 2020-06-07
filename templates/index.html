@@ -20,80 +20,123 @@
   <script src="{{ url_for('static', filename='js/bootstrap-select.min.js') }}"></script>
   <script src="{{ url_for('static', filename='js/scope.js') }}"></script>
 
-  <!--link rel="stylesheet" href="../static/css/bootstrap.min.css">
-  <script src="../static/js/jquery.min.js"></script>
-  <script src="../static/js/popper.min.js"></script>
-  <script src="../static/js/bootstrap.min.js"></script>
-  <link rel="stylesheet" href="../static/css/all.css"-->
 </head>
 
 <body>
 
-<!-- Modal -->
-<div class="modal fade" id="myModal" role="dialog">
+<img src="{{ url_for('video_feed') }}" alt="camera video">
+<div id="messageBox" class="text-danger">Message window</div>
+<button id="takePicture" type="button" class="btn text-danger"><i class="fas fa-camera"></i></button>
+
+<!-- modal stars -->
+<div class="modal fade" id="starsModal" role="dialog">
     <div class="modal-dialog modal-lg">
         <div class="modal-content" style="background-color: black; color: red;">
 
             <div class="modal-header">
-           		<div class="btn-group">
-                      <button type="button" class="btn btn-danger" id="takepicture"><i class="fas fa-camera"></i></button>
-
-                      <div class="btn-group">
-                        <button type="button" class="btn btn-danger dropdown-toggle" data-toggle="dropdown">Iso</button>
-                        <div class="dropdown-menu">
-                          <button class="dropdown-item isoButton" data-iso="100">100</button>
-                          <button class="dropdown-item isoButton" data-iso="200">200</button>
-                          <button class="dropdown-item isoButton" data-iso="300">300</button>
-                          <button class="dropdown-item isoButton" data-iso="400">400</button>
-                          <button class="dropdown-item isoButton" data-iso="800">800</button>
-                          <button class="dropdown-item isoButton" data-iso="1600">1600</button>
-                        </div>
-                      </div>
-
-                      <div class="btn-group">
-                            <button type="button" class="btn btn-danger dropdown-toggle" data-toggle="dropdown">Exposure</button>
-                            <div class="dropdown-menu">
-                              <button class="dropdown-item expButton" data-exp="1">1s</button>
-                              <button class="dropdown-item expButton" data-exp="2">2s</button>
-                              <button class="dropdown-item expButton" data-exp="3">3s</button>
-                              <button class="dropdown-item expButton" data-exp="4">4s</button>
-                              <button class="dropdown-item expButton" data-exp="5">6s</button>
-                              <button class="dropdown-item expButton" data-exp="6">6s</button>
-                            </div>
-                      </div>
-			    </div>
-
-                <button type="button" class="close" id="closeModal">&times;</button>
+                <button type="button" class="close" id="closeStarsModal">&times;</button>
             </div>
 
             <div class="modal-body">
-                <img src="{{ url_for('video_feed') }}" alt="live video feed" style="width: 100%; height: 100%;">
-            </div>
-
-            <div class="modal-footer">
-                <div id="messageModal"></div>
+                <div class="input-group input-group-sm mb-1">
+                      <select class="form-control form-control-sm bg-dark text-danger" data-live-search="true" data-show-subtext="true" id="ids1">
+                        <option value="">Select Star</option>
+                        {% for key, value in stars.items() %}
+                        <option value="{{ key }}" data-tokens="{{ value[0] }}">{{ value[0] }}</option>
+                        {% endfor %}
+                      </select>
+                      <div class="input-group-append">
+                          <button class="btn btn-danger" type="button" id="locateStar"><i class="fa fa-crosshairs"></i></button>
+                          <button class="btn btn-danger" type="button" id="lookingAtStar"><i class="fa fa-eye"></i></button>
+                     </div>
+                  </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="top-left bg-dark">
+<!-- modal messier objects -->
+<div class="modal fade" id="MOModal" role="dialog">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" style="background-color: black; color: red;">
+
+            <div class="modal-header">
+                <button type="button" class="close" id="closeMOModal">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="input-group input-group-sm mb-1">
+                  <select class="form-control form-control-sm bg-dark text-danger" data-live-search="true" data-show-subtext="true" id="ids2">
+                        <option value="">Select Messier Object</option>
+                        {% set optGroup = 'blank' %}
+                        {% for key, value in mo.items() %}
+                        {%     if optGroup != 'blank' and optGroup != value[2] %}
+                                   </optgroup>
+                        {%     endif %}
+
+                        {%     if optGroup != value[2] %}
+                        {%         set optGroup = value[2] %}
+                                   <optgroup label="{{ optGroup }}">
+                        {%      endif %}
+                                <option value="{{ key }}" data-tokens="{{ value[0].strip() }}">{{ value[0].strip() }} - {{ value[1] }}</option>
+                        {% endfor %}
+                        </optgroup>
+                  </select>
+                  <div class="input-group-append">
+                      <button class="btn btn-danger" type="button" id="locateMO"><i class="fa fa-crosshairs"></i></button>
+                  </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="top-left">
       <div class="btn-group">
-        <button type="button" class="btn dropdown-toggle text-danger" data-toggle="dropdown">
-            <i class="fa fa-tachometer-alt fs"></i> <span class="caret"></span>
-        </button>
-        <ul class="dropdown-menu" role="menu">
-            {% set steps = [1, 5, 10, 20, 50, 100, 200] %}
-            {% for step in steps %}
-            <li><a class="dropdown-item step" data-step="{{ step }}" href='#'><i class="text-danger">{{ step }}x</i></a></li>
-            {% endfor %}
-        </ul>
+
         <button type="button" class="btn text-danger" onclick="setDisplay()"><i class="fas fa-tv"></i></button>
-        <button type="button" class="btn text-danger" id="openModal"><i class="fas fa-film"></i></button>
+        <button type="button" class="btn text-danger" id="openStarsModal"><i class="fas fa-star"></i></button>
+        <button type="button" class="btn text-danger" id="openMOModal"><i class="fas fa-spinner"></i></button>
+
+          <div class="btn-group">
+            <button type="button" class="btn text-danger dropdown-toggle" data-toggle="dropdown"><i class="fa fa-tachometer-alt"></i></button>
+            <div class="dropdown-menu">
+                {% set steps = [1, 5, 10, 20, 50, 100, 200, 500] %}
+                {% for step in steps %}
+                <button class="dropdown-item step" data-step="{{ step }}">{{ step }}x</button>
+                {% endfor %}
+            </div>
+          </div>
+
+          <div class="btn-group">
+            <button type="button" class="btn text-danger dropdown-toggle" data-toggle="dropdown">ISO</button>
+            <div class="dropdown-menu">
+              <button class="dropdown-item isoButton" data-iso="100">100</button>
+              <button class="dropdown-item isoButton" data-iso="200">200</button>
+              <button class="dropdown-item isoButton" data-iso="300">300</button>
+              <button class="dropdown-item isoButton" data-iso="400">400</button>
+              <button class="dropdown-item isoButton" data-iso="800">800</button>
+              <button class="dropdown-item isoButton" data-iso="1600">1600</button>
+            </div>
+          </div>
+
+          <div class="btn-group">
+            <button type="button" class="btn text-danger dropdown-toggle" data-toggle="dropdown">EXP</button>
+            <div class="dropdown-menu">
+              <button class="dropdown-item expButton" data-exp="0">Default</button>
+              <button class="dropdown-item expButton" data-exp="1">1s</button>
+              <button class="dropdown-item expButton" data-exp="2">2s</button>
+              <button class="dropdown-item expButton" data-exp="3">3s</button>
+              <button class="dropdown-item expButton" data-exp="4">4s</button>
+              <button class="dropdown-item expButton" data-exp="5">5s</button>
+              <button class="dropdown-item expButton" data-exp="6">6s</button>
+            </div>
+          </div>
       </div>
 </div>
 
-<div class="top-right bg-dark">
+<div class="top-right">
     <div class="col text-right">
         <div class="btn-group">
         <button type="button" class="btn dropdown-toggle text-danger" data-toggle="dropdown">
@@ -121,54 +164,11 @@
   <div class="flex-column justify-content-center px-2 d-flex flex-grow-1 h-100">
     <div class="row d-flex align-items-center">
         <div class="col-1"><a class='text-danger direction' href='#' data-dir="left"><i class="fas fa-angle-left s_dir"></i></a></div>
+
         <div class="col">
-              <div class="form-row d-none">
-
-                  <div class="col">
-                      <div class="input-group input-group-sm mb-1">
-                          <select class="form-control form-control-sm bg-dark text-danger" data-live-search="true" data-show-subtext="true" id="ids1">
-                            <option value="">Select Star</option>
-                            {% for key, value in stars.items() %}
-                            <option value="{{ key }}" data-tokens="{{ value[0] }}">{{ value[0] }}</option>
-                            {% endfor %}
-                          </select>
-                          <div class="input-group-append">
-                              <button class="btn btn-danger" type="button" id="locateStar"><i class="fa fa-crosshairs"></i></button>
-                              <button class="btn btn-danger" type="button" id="lookingAtStar"><i class="fa fa-eye"></i></button>
-                         </div>
-                      </div>
-                  </div>
-
-                  <div class="col">
-                      <div class="input-group input-group-sm mb-1">
-                          <select class="form-control form-control-sm bg-dark text-danger" data-live-search="true" data-show-subtext="true" id="ids2">
-                                <option value="">Select Messier Object</option>
-                                {% set optGroup = 'blank' %}
-                                {% for key, value in mo.items() %}
-                                {%     if optGroup != 'blank' and optGroup != value[2] %}
-                                           </optgroup>
-                                {%     endif %}
-
-                                {%     if optGroup != value[2] %}
-                                {%         set optGroup = value[2] %}
-                                           <optgroup label="{{ optGroup }}">
-                                {%      endif %}
-                                        <option value="{{ key }}" data-tokens="{{ value[0].strip() }}">{{ value[0].strip() }} - {{ value[1] }}</option>
-                                {% endfor %}
-                                </optgroup>
-                          </select>
-                          <div class="input-group-append">
-                              <button class="btn btn-danger" type="button" id="locateMO"><i class="fa fa-crosshairs"></i></button>
-                         </div>
-                      </div>
-
-                  </div>
-
-              </div>
             <button type="button" class="btn btn-danger btn-block" id="btn_location">Set date & location</button>
             <div id="message" class="text-danger"></div>
         </div>
-
 
         <div class="col-1 text-right"><a class='text-danger direction' href='#' data-dir="right"><i class="fas fa-angle-right s_dir"></i></a></div>
     </div>

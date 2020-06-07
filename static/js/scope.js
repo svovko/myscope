@@ -1,7 +1,28 @@
 $(function() {
 
+    // open stars modal
+    $( "#openStarsModal" ).click(function() {
+         $("#starsModal").modal("show");
+    });
+
+    // close stars modal
+    $( "#closeStarsModal" ).click(function() {
+        $("#starsModal").modal("hide");
+    });
+
+    // open MO modal
+    $( "#openMOModal" ).click(function() {
+         $("#MOModal").modal("show");
+    });
+
+    // close stars modal
+    $( "#closeMOModal" ).click(function() {
+        $("#MOModal").modal("hide");
+    });
+
+
     // open camera
-    $( "#openModal" ).click(function() {
+    /*$( "#openModal" ).click(function() {
 
          $("#myModal").modal("show")
          $.ajax({
@@ -11,10 +32,10 @@ $(function() {
             }
         });
 
-    });
+    });*/
 
     // close camera
-    $( "#closeModal" ).click(function() {
+    /*$( "#closeModal" ).click(function() {
 
          $("#myModal").modal("hide")
          $.ajax({
@@ -24,7 +45,7 @@ $(function() {
             }
         });
 
-    });
+    });*/
 
 
     // locate stars
@@ -33,19 +54,19 @@ $(function() {
          $.ajax({
             url: '/locate/' + $( "#ids1" ).val(),
             success: function(data) {
-                $('#message').html(data['message']);
+                $('#messageBox').html(data['message']);
             }
         });
 
     });
 
     // take single image
-    $( "#takepicture" ).click(function() {
+    $( "#takePicture" ).click(function() {
 
          $.ajax({
             url: '/take_picture',
             success: function(data) {
-                $('#messageModal').html(data['message']);
+                $('#messageBox').html(data['message']);
             }
         });
 
@@ -57,7 +78,7 @@ $(function() {
          $.ajax({
             url: '/locate/' + $( "#ids2" ).val(),
             success: function(data) {
-                $('#message').html(data['message']);
+                $('#messageBox').html(data['message']);
             }
         });
 
@@ -69,7 +90,7 @@ $(function() {
          $.ajax({
             url: '/lookingAt/' + $( "#ids1" ).val(),
             success: function(data) {
-                $('#message').html(data['message']);
+                $('#messageBox').html(data['message']);
             }
         });
 
@@ -81,7 +102,7 @@ $(function() {
          $.ajax({
             url: '/dir/' + $( this ).data('dir'),
             success: function(data) {
-                $('#message').html(data['message']);
+                $('#messageBox').html(data['message']);
             }
         });
 
@@ -93,7 +114,7 @@ $(function() {
          $.ajax({
             url: '/steps/' + $( this ).data('step'),
             success: function(data) {
-                $('#message').html(data['message']);
+                $('#messageBox').html(data['message']);
             }
         });
 
@@ -106,7 +127,7 @@ $(function() {
          $.ajax({
             url: '/set_iso/' + $( this ).data('iso'),
             success: function(data) {
-                $('#messageModal').html(data['message']);
+                $('#messageBox').html(data['message']);
             }
         });
 
@@ -119,7 +140,7 @@ $(function() {
          $.ajax({
             url: '/set_exp/' + $( this ).data('exp'),
             success: function(data) {
-                $('#messageModal').html(data['message']);
+                $('#messageBox').html(data['message']);
             }
         });
 
@@ -138,9 +159,8 @@ $(function() {
         $.ajax({
             url: '/initialize/' +lat+" "+lon+";"+dt,
             success: function(data) {
-                $('#message').html(data['message']);
+                $('#messageBox').html(data['message']);
                 $( "#btn_location" ).addClass( "d-none" );
-                $( ".form-row" ).removeClass("d-none").addClass( "d-block" );
             }
         });
       });
