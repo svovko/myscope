@@ -1,8 +1,19 @@
 import RPi.GPIO as gpio
 from time import sleep
-import CoordinateConversion
 from LocationInfo import LocationInfo
 import threading
+import helper_functions
+
+
+# SMALL GEAR TEETH COUNT = 24  # number of teeth
+# BIG GEAR TEETH COUNT = 162  # number of teeth
+# RATIO = 6.75
+# STEPS PER REVOLUTION = 3200  # with microstepping
+# 1 STEP = 1 ARC MINUTE
+
+# for 1 arc second step I need gear reduction ratio of 405:1
+# self.bottom_steps_per_second = 1 # 1 step = 1 arc second (given the ratio 405)
+# self.top_steps_per_second = 1 # 1 step = 1 arc second
 
 
 class Telescope:
@@ -14,16 +25,18 @@ class Telescope:
         self.pin_stp_top = ps_t
         self.pin_stp_bottom = ps_b
 
-        #  (1D = 60M = 3600s)
-        self.dms_latitude = (45, 48)  # omiting seconds
-        self.dms_longitude = (15, 10)  # omiting seconds
-
-        self.initialized = False
-
         self.altitude_m = 0  # top angle in minutes
-        self.azimuth_m = 0  # bottom angle in minutes (24355 => facing south)
-
+        self.azimuth_m = 0  # bottom angle in minutes
+        
+        # 1 step = 1 minute
         self.manual_steps = 1
+
+        # 1 step = 1 arc minute
+        self.bottom_steps_per_minute = 1
+        self.top_steps_per_minute = 1
+
+        self.min_speed = 0.01
+        self.max_speed = 0.001
 
         self.tracking = False
 
@@ -35,139 +48,155 @@ class Telescope:
         gpio.setup(self.pin_stp_top, gpio.OUT)
         gpio.setup(self.pin_stp_bottom, gpio.OUT)
 
-    def turn_motor(self, pin, steps, tb):
-        accelerate = [0.002, 0.0018, 0.0016, 0.0014, 0.0012, 0.001, 0.0008, 0.0006, 0.0004, 0.0002]
-        if tb == 'T':
-            accelerate = [0.01, 0.009, 0.008, 0.007, 0.006, 0.005, 0.004, 0.003, 0.002, 0.001]
+    def make_step(self, pin, delay):
+        gpio.output(pin, True)
+        sleep(delay)
+        gpio.output(pin, False)
+        sleep(delay)
 
-        speed = accelerate[0]
-        for i in range(steps // 2):
+    def turn_motor(self, pin, steps):
 
-            if i // 20 < len(accelerate):
-                speed = accelerate[i // 20]
+        # 3200 steps = ful revolution
+        if steps < 400:
+            acc_percent = .4
+        elif steps < 800:
+            acc_percent = .3
+        elif steps < 1600:
+            acc_percent = .2
+        elif steps < 3200:
+            acc_percent = .1
+        else:
+            acc_percent = .05
 
-            gpio.output(pin, True)
-            sleep(speed)
-            gpio.output(pin, False)
-            sleep(speed)
+        acc_steps = dec_steps = int(steps * acc_percent)
 
-        for i in range(steps // 2, 0, -1):
+        delay = self.min_speed
 
-            if i < 200:
-                if i // 20 <= len(accelerate):
-                    speed = accelerate[i//20]
+        for i in range(acc_steps):
+            delay = round(helper_functions.valmap(i + 1, 1, acc_steps, self.min_speed, self.max_speed), 5)
+            self.make_step(pin, delay)
 
-            gpio.output(pin, True)
-            sleep(speed)
-            gpio.output(pin, False)
-            sleep(speed)
+        for i in range(1, steps - acc_steps - dec_steps + 1):
+            self.make_step(pin, delay)
 
-    # "21 56 30" => 1316 minut in 30 s
-    # "57 23 20" => 3443 minut in 20 s
+        for i in range(dec_steps):
+            delay = round(helper_functions.valmap(i + 1, dec_steps, 1, self.min_speed, self.max_speed), 5)
+            self.make_step(pin, delay)
 
-    #  5.400m = 90stopinj
-    #  2.545 steps * 2 = 90stopinj
-    #  2.545 steps * 2 = 5.400m
-    def turn_ud(self, alt):  # alt is in minutes
-        minutes = alt
 
-        gpio.output(self.pin_dir_top, not self.altitude_m < minutes)  # turn up or down
+    # ****************** bottom motor ***********************
+    def turn_left(self, delta_minutes):  # az is in minutes (convert function returns az converted to minutes)
+        print('Turning left for', delta_minutes, 'minutes.')
+        gpio.output(self.pin_dir_bottom, False)  # turn left or right
+        if delta_minutes > 0:
+            self.turn_motor(self.pin_stp_bottom, delta_minutes)
 
-        minutes = abs(self.altitude_m - minutes)  # calculate difference
+    def turn_right(self, delta_minutes):  # az is in minutes (convert function returns az converted to minutes)
+        print('Turning right for', delta_minutes, 'minutes.')
+        gpio.output(self.pin_dir_bottom, True)  # turn left or right
+        if delta_minutes > 0:
+            self.turn_motor(self.pin_stp_bottom, delta_minutes)
 
-        speed = round((minutes * 2545) / 5400)
+    # ****************** top motor ***********************
+    def turn_up(self, delta_minutes):  # az is in minutes (convert function returns az converted to minutes)
+        print('Turning up for', delta_minutes, 'minutes.')
+        gpio.output(self.pin_dir_top, False)  # turn up or down
+        if delta_minutes > 0:
+            self.turn_motor(self.pin_stp_top, delta_minutes)
 
-        self.altitude_m = alt  # dms[0] * 60 + dms[1]  # set final altitude position
+    def turn_down(self, delta_minutes):  # az is in minutes (convert function returns az converted to minutes)
+        print('Turning down for', delta_minutes, 'minutes.')
+        gpio.output(self.pin_dir_top, True)  # turn up or down
+        if delta_minutes > 0:
+            self.turn_motor(self.pin_stp_top, delta_minutes)
 
-        self.turn_motor(self.pin_stp_top, speed * 2, 'T')  # 0.004
+    def locate(self, ti, li):  # target info & location info
 
-    #  21.600m = 360 stopinj
-    #  24.355 steps * 2 = 360 stopinj
-    #  24.355 steps * 2 = 21.600m
-    def turn_lr(self, az):
-        minutes = az
+        alt, az = helper_functions.convert(ti, li)  # gets altitude and azimuth in decimal degrees
+        print('altitude (deg):', alt)
+        print('azimuth (deg:)', az)
 
-        gpio.output(self.pin_dir_bottom, self.azimuth_m < minutes)  # turn left or right
-
-        minutes = abs(self.azimuth_m - minutes)  # calculate difference
-
-        speed = round((minutes * 24355) / 21600)
-
-        self.azimuth_m = az  # dms[0] * 60 + dms[1]  # set final azimuth position
-
-        self.turn_motor(self.pin_stp_bottom, speed * 2, 'B')
-
-    def set_location(self, p):
-        # p ~ 45.801007399999996 15.1672683
-        p = p.split(' ')
-        lat = float(p[0])  # 45.801007399999996
-        lon = float(p[1])  # 15.1672683
-
-        lat_d = int(lat)  # lat degrees
-        lon_d = int(lon)  # lon degrees
-
-        lat_m = round((lat-lat_d) * 60)  # lat minutes
-        lon_m = round((lon-lon_d) * 60)  # lon minutes
-
-        self.dms_latitude = (lat_d, lat_m)
-        self.dms_longitude = (lon_d, lon_m)
-
-        self.initialized = True
-
-    def locate(self, mo, dt):
-
-        li = LocationInfo(mo.get_dec_degree(), mo.get_dec_minute(), mo.get_ra_hour(), mo.get_ra_minute(),
-                          self.dms_latitude[0], self.dms_latitude[1], self.dms_longitude[0], self.dms_longitude[1],
-                          dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second)
-
-        alt, az = CoordinateConversion.convert(li)
+        alt = helper_functions.real2minutes(alt) # converts decimal degrees to minutes
+        az = helper_functions.real2minutes(az) # converts decimal degrees to minutes
+        print('altitude (min): ', alt)
+        print('azimuth (min):', az)
 
         if alt < 0:
             return 'Object is below horizon.'
         else:
-            t1 = threading.Thread(target=self.turn_ud, args=[alt])
-            t2 = threading.Thread(target=self.turn_lr, args=[az])
-            t1.start()
-            t2.start()
+            t1 = t2 = None
+            if alt > self.altitude_m: # turn up
+                t1 = threading.Thread(target=self.turn_up, args=[abs(alt-self.altitude_m)])
+                t1.start()
+                self.altitude_m = alt
+            elif alt < self.altitude_m: # turn down
+                t1 = threading.Thread(target=self.turn_down, args=[abs(alt-self.altitude_m)])
+                t1.start()
+                self.altitude_m = alt
 
-            t1.join()
-            t2.join()
+            if az > self.azimuth_m: # turn right
+                t2 = threading.Thread(target=self.turn_right, args=[abs(az-self.azimuth_m)])
+                t2.start()
+                self.azimuth_m = az
+            elif az < self.azimuth_m: # turn left
+                t2 = threading.Thread(target=self.turn_left, args=[abs(az-self.azimuth_m)])
+                t2.start()
+                self.azimuth_m = az
 
-            return mo.get_object_name()
+            if t1:
+                t1.join()
+            if t2:
+                t2.join()
 
-    def looking_at(self, mo, dt):
+            return f'NOTE: {ti.note} | OBJID: {ti.obj_id} | POS:({self.return_position()})'
 
-        li = LocationInfo(mo.get_dec_degree(), mo.get_dec_minute(), mo.get_ra_hour(), mo.get_ra_minute(),
-                          self.dms_latitude[0], self.dms_latitude[1], self.dms_longitude[0], self.dms_longitude[1],
-                          dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second)
+    def stop_tracking(self):
+        self.tracking = False
 
-        alt, az = CoordinateConversion.convert(li)
+    def start_tracking(self, ti, li):
+        self.tracking = True
+        while self.tracking:
+            self.locate(ti, li)
+            sleep(1)
+
+    def looking_at(self, ti, li):
+
+        alt, az = helper_functions.convert(ti, li)
 
         if alt < 0:
             return 'Object is below horizon.'
         else:
-            self.altitude_m = alt
-            self.azimuth_m = az
-            return mo.get_object_name()
+            self.altitude_m = helper_functions.real2minutes(alt)
+            self.azimuth_m = helper_functions.real2minutes(az)
+            return f'NOTE: {ti.note} | OBJID: {ti.obj_id} | POS:({self.return_position()})'
 
-    def get_initialized(self):
-        return self.initialized
-
-    def turn_left(self):
-        gpio.output(self.pin_dir_bottom, True)
-        self.turn_motor(self.pin_stp_bottom, self.manual_steps * 2, 'B')
-
-    def turn_right(self):
-        gpio.output(self.pin_dir_bottom, False)
-        self.turn_motor(self.pin_stp_bottom, self.manual_steps * 2, 'B')
-
-    def turn_up(self):
-        gpio.output(self.pin_dir_top, False)
-        self.turn_motor(self.pin_stp_top, self.manual_steps * 2, 'T')
-
-    def turn_down(self):
-        gpio.output(self.pin_dir_top, True)
-        self.turn_motor(self.pin_stp_top, self.manual_steps * 2, 'T')
+    def reset_position(self):
+        self.altitude_m = 0
+        self.azimuth_m = 0
 
     def set_manual_steps(self, steps):
         self.manual_steps = steps
+
+    def return_position(self):
+        return  f'ALT: {helper_functions.min2DM(self.altitude_m)}, AZ: {helper_functions.min2DM(self.azimuth_m)}'
+
+
+    def turn_to_altitude(self, alt_minutes):
+        if alt_minutes > self.altitude_m: # turn up
+            self.turn_up(abs(alt_minutes-self.altitude_m))
+            self.altitude_m = alt_minutes
+        elif alt_minutes < self.altitude_m: # turn down
+            self.turn_down(abs(alt_minutes-self.altitude_m))
+            self.altitude_m = alt_minutes
+
+        return f'POS:({self.return_position()})'
+
+    def turn_to_azimuth(self, az_minutes):
+        if az_minutes > self.azimuth_m: # turn right
+            self.turn_right(abs(az_minutes-self.azimuth_m))
+            self.azimuth_m = az_minutes
+        elif az_minutes < self.azimuth_m: # turn left
+            self.turn_left(abs(az_minutes-self.azimuth_m))
+            self.azimuth_m = az_minutes
+
+        return f'POS:({self.return_position()})'
