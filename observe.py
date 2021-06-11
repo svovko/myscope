@@ -1,23 +1,42 @@
+import threading
 from subprocess import call
-from flask import Flask, render_template, jsonify, Response
+from flask import Flask, render_template, jsonify, Response, request
+
 from CTelescope import Telescope
-from sky_object_data import stars, messier_objects
-from co import CelestialObject
 from CCamera import Camera
-import datetime
+
+from sky_object_data import get_objects, find_objects
+from LocationInfo import LocationInfo
+from TargetInfo import TargetInfo
 
 
 app = Flask(__name__)
 
 t = Telescope(6, 13, 5, 19)
 c = Camera()
-template_data = {'title': 'My Scope', 'stars': stars, 'mo': messier_objects}
+li = LocationInfo()
+ti = TargetInfo()  # last target (for tracking)
 
 
 @app.route('/')
 def index():
-    c.start_streaming()
-    return render_template('index.html', **template_data)
+    return render_template('index.html')
+
+
+@app.route('/filter_data/', methods=['GET'])
+def filter_data():
+
+    params = request.args.to_dict()
+    # params['m'] = True if params['m'] == 'true' else False
+    return jsonify(get_objects(t=params['t'] if 't' in params else '', c=params['c'] if 'c' in params else '', m=True if 'm' in params and params['m'] == 'true' else False, li=li))
+
+
+@app.route('/search/', methods=['GET'])
+def search():
+
+    params = request.args.to_dict()
+
+    return jsonify(find_objects(params['q']))  #, params['t']))
 
 
 @app.route('/steps/<steps>')
@@ -30,62 +49,104 @@ def set_steps(steps):
 
 
 @app.route('/initialize/<dt>')
-def settime(dt):  # 45.801007399999996 15.1672683;2020-2-20 20:19:0
+def set_time_and_location(dt):  # 45.801007399999996 15.1672683;2020-2-20 20:19:0
 
     params = dt.split(';')
-    t.set_location(params[0])
+    print(params)
+
+    # set location
+    li.set_location(params[0])
+
+    # set system time
     call('sudo date -s "'+params[1]+'"', shell=True)
+
+    # start camera
+    if not c.streaming:
+        c.start_streaming()
 
     return jsonify({'message': 'Location & time set: ' + dt})
 
 
 @app.route('/lookingAt/<param>')
 def looking_at(param):
-    # param ~ '72'
 
-    p_obj_id = int(param)  # get object id
-
-    # get datetime data
-    dt = datetime.datetime.now()
-
-    mo = CelestialObject(p_obj_id)
+    ti.set_target(param)
 
     return jsonify({
-        "message": 'Looking at ' + t.looking_at(mo, dt),
+        "message": 'Looking at ' + t.looking_at(ti, li),
     })
 
 
 @app.route('/locate/<param>')
 def locate(param):
-    # param ~ '72'
 
-    p_obj_id = int(param)  # get object id
-
-    # get datetime data
-    dt = datetime.datetime.now()
-
-    mo = CelestialObject(p_obj_id)
+    ti.set_target(param)
 
     return jsonify({
-        "message":  'Located ' + t.locate(mo, dt),
+        "message": 'Tracking ' + t.locate(ti, li),
     })
 
 
-# manual corrections
-@app.route('/dir/<dir>')
-def turn_scope(dir):
+@app.route('/set_altitude/<alt>')
+def set_altitude(alt):
 
-    if dir == 'left':
-        t.turn_left()
-    elif dir == 'right':
-        t.turn_right()
-    elif dir == 'up':
-        t.turn_up()
-    elif dir == 'down':
-        t.turn_down()
+    t.turn_to_altitude(int(alt))
+    return jsonify({
+        "message": 'Set altitude: ' + alt,
+    })
+
+
+@app.route('/set_azimuth/<az>')
+def set_azimuth(az):
+
+    t.turn_to_azimuth(int(az))
+    return jsonify({
+        "message": 'Set azimuth: ' + az,
+    })
+
+
+@app.route('/startTracking')
+def start_tracking():
+
+    print('started tracking:', ti.get_obj())
+    t1 = threading.Thread(target=t.start_tracking, args=[ti, li])
+    t1.start()
+    t1.join()
+    print('stoped tracking:', ti.get_obj())
+    return 'Started tracking'
+
+
+@app.route('/stopTracking')
+def stop_tracking():
+
+    t.stop_tracking()
+    return 'Stopped tracking'
+
+
+# manual corrections
+@app.route('/dir/<direction>')
+def turn_scope(direction):
+
+    if direction == 'left':
+        t.turn_left(t.manual_steps)
+    elif direction == 'right':
+        t.turn_right(t.manual_steps)
+    elif direction == 'up':
+        t.turn_up(t.manual_steps)
+    elif direction == 'down':
+        t.turn_down(t.manual_steps)
 
     return jsonify({
-        "message": 'Turned ' + dir,
+        "message": 'Turned ' + direction,
+    })
+
+
+# reset position
+@app.route('/resetPosition')
+def reset_position():
+    t.reset_position()
+    return jsonify({
+        "message": "Position reset. Level the scope and turn it North.",
     })
 
 
@@ -105,26 +166,14 @@ def take_picture():  # tale zna crknit, če je kamera ugasnjena
     #print('Took image:', img)
     return jsonify({
         "message": "Image saved to: <a href='static/pictures/"+img+"' target='_blank'>"+img+"</a>",
+        "src": "static/pictures/"+img,
     })
 
 
 @app.route('/video_feed')
 def video_feed():
 
-    # c.start_streaming()
     return Response(gen(), mimetype='multipart/x-mixed-replace; boundary=frame')
-
-
-#@app.route('/start_camera')
-#def start_camera():
-#    c.start_streaming()
-#    return jsonify({"message": "Camera started", })
-
-
-#@app.route('/stop_camera')
-#def stop_camera():
-#    c.stop_streaming()
-#    return jsonify({"message": "Camera stopped", })
 
 
 @app.route('/exit')
@@ -141,11 +190,11 @@ def set_iso(iso):
     return jsonify({"message": "ISO set to: " + iso, })
 
 
-@app.route('/set_exp/<exp>')
-def set_exp(exp):
-
-    c.set_exp(int(exp))
-    return jsonify({"message": "Exposure set to: " + exp, })
+# @app.route('/set_exp/<exp>')
+# def set_exp(exp):
+#
+#     c.set_exp(int(exp))
+#     return jsonify({"message": "Exposure set to: " + exp, })
 
 
 if __name__ == '__main__':
