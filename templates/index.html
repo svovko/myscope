@@ -18,6 +18,7 @@
   <script src="../static/js/popper.min.js"></script>
   <script src="../static/js/bootstrap.min.js"></script>
   <script src="../static/js/bootstrap-select.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA==" crossorigin="anonymous"></script>
   <script src="../static/js/scope.js"></script>
 
   <!-- <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
@@ -34,8 +35,8 @@
 </head>
 
 <body>
-
-<img src="{{ url_for('video_feed') }}" alt="camera video" class="video_bg">
+  <!-- {  { url _ for ('video_feed')  }  } -->
+<img src="" alt="camera video" class="video_bg">
 <div id="messageBox" class="text-danger">Message window</div>
 <button id="takePicture" type="button" class="btn text-danger"><i class="fas fa-camera"></i></button>
 
@@ -392,7 +393,7 @@
                   <i class="fa fa-camera"></i> Set ISO
                 </button>
                 <div class="dropdown-menu bg-danger">
-                  {% set isos = [100, 200, 300, 400, 800, 1600] %}
+                  {% set isos = [100, 200, 300, 400, 800, 1600, 3200] %}
                   {% for iso in isos %}
                   <button class="dropdown-item iso" data-iso="{{ iso }}">{{ iso }}x</button>
                   {% endfor %}
@@ -404,7 +405,7 @@
                   <i class="fa fa-camera"></i> Set steps (minutes)
                 </button>
                 <div class="dropdown-menu bg-danger">
-                  {% set steps = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60] %}
+                  {% set steps = [1, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 80, 120, 240, 300, 600] %}
                   {% for step in steps %}
                   <button class="dropdown-item step" data-step="{{ step }}">{{ step }}x</button>
                   {% endfor %}

@@ -15,6 +15,12 @@ import helper_functions
 # self.bottom_steps_per_second = 1 # 1 step = 1 arc second (given the ratio 405)
 # self.top_steps_per_second = 1 # 1 step = 1 arc second
 
+# 28. 11. 2021:
+# Stepper driverji so na full step: 200 steps/360 stopinj
+# Gear reduction: 9 x 9 x 5 = 405
+# Steps per full revolution: 81000 (200 * 405)
+# Steps per degree: 225 (81000 / 360)
+# Steps per arc minute: 3.75 (225 / 60)
 
 class Telescope:
 
@@ -25,20 +31,24 @@ class Telescope:
         self.pin_stp_top = ps_t
         self.pin_stp_bottom = ps_b
 
-        self.altitude_m = 0  # top angle in minutes
+        self.altitude_m = 90 * 60  # top angle in minutes (starting position pointing top)
         self.azimuth_m = 0  # bottom angle in minutes
         
-        # 1 step = 1 minute
-        self.manual_steps = 1
+        # 3.75 steps = 1 arc minute
+        self.manual_steps = 3.75
 
-        # 1 step = 1 arc minute
-        self.bottom_steps_per_minute = 1
-        self.top_steps_per_minute = 1
+        # 3.75 steps = 1 arc minute
+        self.bottom_steps_per_minute = 3.75 # 60 je test, če dela cycloidic drive. Sicer daj na 1!!
+        self.top_steps_per_minute = 3.75
 
-        self.min_speed = 0.01
-        self.max_speed = 0.001
+        # self.min_speed = 0.01
+        # self.max_speed = 0.001
+        # self.min_speed = 0.001
+        self.max_speed = 0.0005
 
         self.tracking = False
+        self.turning_top = False
+        self.turning_bottom = False
 
         gpio.setmode(gpio.BCM)
         gpio.setwarnings(False)
@@ -54,8 +64,13 @@ class Telescope:
         gpio.output(pin, False)
         sleep(delay)
 
-    def turn_motor(self, pin, steps):
+    def turn_motor(self, pin, steps=1):
+        # print('Turning steps:', steps, '@', self.max_speed)
+        for i in range(steps):
+            self.make_step(pin, self.max_speed)
 
+
+        '''
         # 3200 steps = ful revolution
         if steps < 400:
             acc_percent = .4
@@ -70,45 +85,94 @@ class Telescope:
 
         acc_steps = dec_steps = int(steps * acc_percent)
 
-        delay = self.min_speed
+        # delay = self.min_speed
+        delay = self.max_speed
 
         for i in range(acc_steps):
-            delay = round(helper_functions.valmap(i + 1, 1, acc_steps, self.min_speed, self.max_speed), 5)
+            # delay = round(helper_functions.valmap(i + 1, 1, acc_steps, self.min_speed, self.max_speed), 5)
             self.make_step(pin, delay)
 
         for i in range(1, steps - acc_steps - dec_steps + 1):
             self.make_step(pin, delay)
 
         for i in range(dec_steps):
-            delay = round(helper_functions.valmap(i + 1, dec_steps, 1, self.min_speed, self.max_speed), 5)
+            # delay = round(helper_functions.valmap(i + 1, dec_steps, 1, self.min_speed, self.max_speed), 5)
             self.make_step(pin, delay)
-
+        '''
 
     # ****************** bottom motor ***********************
     def turn_left(self, delta_minutes):  # az is in minutes (convert function returns az converted to minutes)
-        print('Turning left for', delta_minutes, 'minutes.')
-        gpio.output(self.pin_dir_bottom, False)  # turn left or right
-        if delta_minutes > 0:
-            self.turn_motor(self.pin_stp_bottom, delta_minutes)
-
-    def turn_right(self, delta_minutes):  # az is in minutes (convert function returns az converted to minutes)
-        print('Turning right for', delta_minutes, 'minutes.')
+        # print('Turning left for', delta_minutes, 'minutes.')
         gpio.output(self.pin_dir_bottom, True)  # turn left or right
         if delta_minutes > 0:
-            self.turn_motor(self.pin_stp_bottom, delta_minutes)
+            self.turn_motor(self.pin_stp_bottom, int(delta_minutes*self.bottom_steps_per_minute))
+
+    def turn_right(self, delta_minutes):  # az is in minutes (convert function returns az converted to minutes)
+        # print('Turning right for', delta_minutes, 'minutes.')
+        gpio.output(self.pin_dir_bottom, False)  # turn left or right
+        if delta_minutes > 0:
+            self.turn_motor(self.pin_stp_bottom, int(delta_minutes*self.bottom_steps_per_minute))
 
     # ****************** top motor ***********************
     def turn_up(self, delta_minutes):  # az is in minutes (convert function returns az converted to minutes)
-        print('Turning up for', delta_minutes, 'minutes.')
+        # print('Turning up for', delta_minutes, 'minutes.')
         gpio.output(self.pin_dir_top, False)  # turn up or down
         if delta_minutes > 0:
-            self.turn_motor(self.pin_stp_top, delta_minutes)
+            self.turn_motor(self.pin_stp_top, int(delta_minutes*self.top_steps_per_minute))
 
     def turn_down(self, delta_minutes):  # az is in minutes (convert function returns az converted to minutes)
-        print('Turning down for', delta_minutes, 'minutes.')
+        # print('Turning down for', delta_minutes, 'minutes.')
         gpio.output(self.pin_dir_top, True)  # turn up or down
         if delta_minutes > 0:
-            self.turn_motor(self.pin_stp_top, delta_minutes)
+            self.turn_motor(self.pin_stp_top, int(delta_minutes*self.top_steps_per_minute))
+
+    def start_bottom_motor(self):
+        while self.turning_bottom:
+            self.make_step(self.pin_stp_bottom, self.max_speed)
+
+    def start_top_motor(self):
+        while self.turning_top:
+            self.make_step(self.pin_stp_top, self.max_speed)
+
+    def start_turning_left(self):
+        self.turning_bottom = True
+        gpio.output(self.pin_dir_bottom, True) 
+        t = threading.Thread(target=self.start_bottom_motor)
+        t.start()
+        t.join()
+
+    def start_turning_right(self):
+        self.turning_bottom = True
+        gpio.output(self.pin_dir_bottom, False) 
+        t = threading.Thread(target=self.start_bottom_motor)
+        t.start()
+        t.join()
+
+    def start_turning_up(self):
+        self.turning_top = True
+        gpio.output(self.pin_dir_top, False) 
+        t = threading.Thread(target=self.start_top_motor)
+        t.start()
+        t.join()
+
+    def start_turning_down(self):
+        self.turning_top = True
+        gpio.output(self.pin_dir_top, True) 
+        t = threading.Thread(target=self.start_top_motor)
+        t.start()
+        t.join()
+
+    def stop_turning_left(self):
+        self.turning_bottom = False
+
+    def stop_turning_right(self):
+        self.turning_bottom = False
+
+    def stop_turning_up(self):
+        self.turning_top = False
+
+    def stop_turning_down(self):
+        self.turning_top = False
 
     def locate(self, ti, li):  # target info & location info
 
@@ -171,7 +235,7 @@ class Telescope:
             return f'NOTE: {ti.note} | OBJID: {ti.obj_id} | POS:({self.return_position()})'
 
     def reset_position(self):
-        self.altitude_m = 0
+        self.altitude_m = 90 * 60
         self.azimuth_m = 0
 
     def set_manual_steps(self, steps):

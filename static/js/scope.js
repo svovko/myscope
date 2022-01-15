@@ -1,8 +1,6 @@
 $(function() {
 
 
-
-
     /*************************** + modal windows + *********************/
     // open stars modal
     $( "#btnSearch" ).click(function() {
@@ -48,31 +46,26 @@ $(function() {
 
     // change altitude
     $("#altitudeRangeDeg").change(function(){
-        //alert($(this).val());
         $('#lblAltitudeDeg').text('Altitude (deg): ' + $(this).val());
     });
 
     // change azimuth
     $("#azimuthRangeDeg").change(function(){
-        //alert($(this).val());
         $('#lblAzimuthDeg').text('Azimuth (deg): ' + $(this).val());
     });
 
     // change altitude
     $("#altitudeRangeMin").change(function(){
-        //alert($(this).val());
         $('#lblAltitudeMin').text('Altitude (min): ' + $(this).val());
     });
 
     // change azimuth
     $("#azimuthRangeMin").change(function(){
-        //alert($(this).val());
         $('#lblAzimuthMin').text('Azimuth (min): ' + $(this).val());
     });
 
     // turn altitude
     $("#changeAltitude").click(function(){
-        //alert($("#altitudeRange").val());
         var alt = parseInt($("#altitudeRangeDeg").val()) * 60 + parseInt($("#altitudeRangeMin").val());
         $.ajax({
             url: '/set_altitude/' + alt,
@@ -84,7 +77,6 @@ $(function() {
 
     // turn azimuth
     $("#changeAzimuth").click(function(){
-        //alert($("#azimuthRange").val());
         var az = parseInt($("#azimuthRangeDeg").val()) * 60 + parseInt($("#azimuthRangeMin").val());
         $.ajax({
             url: '/set_azimuth/' + az,
@@ -257,16 +249,77 @@ $(function() {
 
     /*************************** + telescope control + *********************/
     // manual turn scope (up, down, left, right)
-    $( ".direction" ).click(function() {
+    // $( ".direction" ).click(function() {
 
-         $.ajax({
-            url: '/dir/' + $( this ).data('dir'),
-            success: function(data) {
-                $('#messageBox').html(data['message']);
-            }
-        });
+    //      $.ajax({
+    //         url: '/dir/' + $( this ).data('dir'),
+    //         success: function(data) {
+    //             $('#messageBox').html(data['message']);
+    //         }
+    //     });
 
+    // });
+
+    $(document).keydown(function (e) {
+        switch (e.keyCode)
+        {
+            // left
+            case 37:
+                $.ajax({
+                    url: '/dir/left',
+                    success: function(data) {
+                        $('#messageBox').html(data['message']);
+                    }
+                }); break;
+            // up
+            case 38: 
+                $.ajax({
+                    url: '/dir/up',
+                    success: function(data) {
+                        $('#messageBox').html(data['message']);
+                    }
+                }); break;
+            // right
+            case 39:
+                $.ajax({
+                    url: '/dir/right',
+                    success: function(data) {
+                        $('#messageBox').html(data['message']);
+                    }
+                }); break;
+            // down
+            case 40: 
+                $.ajax({
+                    url: '/dir/down',
+                    success: function(data) {
+                        $('#messageBox').html(data['message']);
+                    }
+                }); break;
+        }
     });
+
+    $( ".direction" ).mousedown(function() {
+
+        $.ajax({
+           url: '/start_turning/' + $( this ).data('dir'),
+           success: function(data) {
+               $('#messageBox').html(data['message']);
+           }
+       });
+
+   });
+
+
+   $( ".direction" ).mouseup(function() {
+
+    $.ajax({
+       url: '/stop_turning/' + $( this ).data('dir'),
+       success: function(data) {
+           $('#messageBox').html(data['message']);
+       }
+   });
+
+});
 
     // set manual steps
     $( ".step" ).click(function() {
