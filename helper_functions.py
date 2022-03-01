@@ -103,6 +103,9 @@ def real2minutes(real_degrees):
     minutes = (real_degrees - deg) * 60
     return round(deg * 60 + minutes)
 
+def real2seconds(real_degrees):
+    return round(real_degrees * 3600)
+
 
 def is_visible(ti, li):
     alt, az = convert(ti, li)
@@ -112,6 +115,10 @@ def is_visible(ti, li):
 def min2DM(min):
     degree_sign= u'\N{DEGREE SIGN}'
     return f'{min//60}{degree_sign} {min%60}"'
+
+def seconds2DMS(sec):
+    degree_sign= u'\N{DEGREE SIGN}'
+    return f'{sec//3600}{degree_sign} {(sec%3600)//60}" {((sec%3600)%60)/60}\''
 
 def deg2HMS(ra='', dec=''):
     #['*', '2:31:49', '89:15:50', 'UMi', '', '2.13', 'Polaris'],
