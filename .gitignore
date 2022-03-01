@@ -1,0 +1,12 @@
+.idea
+brisi.py
+CoordinateConversion.py
+myCA.pem
+testws.py
+parseNGCICData.py
+CStats.py
+__pycache__
+templates/test.html
+templates/testws.html
+CCompas.py
+co.py
