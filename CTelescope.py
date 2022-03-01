@@ -4,163 +4,184 @@ from LocationInfo import LocationInfo
 import threading
 import helper_functions
 
-
-# SMALL GEAR TEETH COUNT = 24  # number of teeth
-# BIG GEAR TEETH COUNT = 162  # number of teeth
-# RATIO = 6.75
-# STEPS PER REVOLUTION = 3200  # with microstepping
-# 1 STEP = 1 ARC MINUTE
-
 # for 1 arc second step I need gear reduction ratio of 405:1
 # self.bottom_steps_per_second = 1 # 1 step = 1 arc second (given the ratio 405)
 # self.top_steps_per_second = 1 # 1 step = 1 arc second
-
-# 28. 11. 2021:
-# Stepper driverji so na full step: 200 steps/360 stopinj
+# In sixtinth step: 3200 steps / 360 degrees
 # Gear reduction: 9 x 9 x 5 = 405
-# Steps per full revolution: 81000 (200 * 405)
-# Steps per degree: 225 (81000 / 360)
-# Steps per arc minute: 3.75 (225 / 60)
+# Steps per full revolution: 1.296.000 (3200 * 405)
+# Steps per degree: 3600 (1.296.000 / 360)
+# Steps per arc minute: 60 (3600 / 60)
+# Steps per arc second: 1 (60 / 60)
+
 
 class Telescope:
 
-    def __init__(self, pd_t, pd_b, ps_t, ps_b):
+    def __init__(self, pd_t, pd_b, ps_t, ps_b): # 5, 13, 6, 19
+
+        # set direction pins
         self.pin_dir_top = pd_t
         self.pin_dir_bottom = pd_b
 
+        # set step pins
         self.pin_stp_top = ps_t
         self.pin_stp_bottom = ps_b
 
-        self.altitude_m = 90 * 60  # top angle in minutes (starting position pointing top)
-        self.azimuth_m = 0  # bottom angle in minutes
-        
-        # 3.75 steps = 1 arc minute
-        self.manual_steps = 3.75
+        # Telescope start position
+        self.altitude_seconds = 324000 # (90 * 3600) top angle in minutes (pointing straight up)
+        self.azimuth_seconds = 0  # bottom angle in minutes (0 = pointing north)
 
-        # 3.75 steps = 1 arc minute
-        self.bottom_steps_per_minute = 3.75 # 60 je test, če dela cycloidic drive. Sicer daj na 1!!
-        self.top_steps_per_minute = 3.75
+        # 1 step = 1 arc second
+        self.bottom_steps_per_second = 1 
+        self.top_steps_per_second = 1
 
-        # self.min_speed = 0.01
-        # self.max_speed = 0.001
-        # self.min_speed = 0.001
-        self.max_speed = 0.0005
+        # bottom and top motor speed
+        self.speed_bottom = 0.00005
+        self.speed_top = 0.00005
 
+        # turning status
         self.tracking = False
         self.turning_top = False
         self.turning_bottom = False
 
+        # GPIO settings
         gpio.setmode(gpio.BCM)
         gpio.setwarnings(False)
 
+        # PIN settings
         gpio.setup(self.pin_dir_top, gpio.OUT)
         gpio.setup(self.pin_dir_bottom, gpio.OUT)
         gpio.setup(self.pin_stp_top, gpio.OUT)
         gpio.setup(self.pin_stp_bottom, gpio.OUT)
 
-    def make_step(self, pin, delay):
-        gpio.output(pin, True)
-        sleep(delay)
-        gpio.output(pin, False)
-        sleep(delay)
-
-    def turn_motor(self, pin, steps=1):
-        # print('Turning steps:', steps, '@', self.max_speed)
-        for i in range(steps):
-            self.make_step(pin, self.max_speed)
+    def reset_position(self):
+        self.altitude_seconds = 324000
+        self.azimuth_seconds = 0
 
 
-        '''
-        # 3200 steps = ful revolution
-        if steps < 400:
-            acc_percent = .4
-        elif steps < 800:
-            acc_percent = .3
-        elif steps < 1600:
-            acc_percent = .2
-        elif steps < 3200:
-            acc_percent = .1
-        else:
-            acc_percent = .05
+    # + Actual turning of the motors +
+    # NOTE: direction must be set before calling this method
+    def make_step_left(self):
+        gpio.output(self.pin_stp_bottom, True)
+        sleep(self.speed_bottom)
+        gpio.output(self.pin_stp_bottom, False)
+        sleep(self.speed_bottom)
+        self.azimuth_seconds -= 1
 
-        acc_steps = dec_steps = int(steps * acc_percent)
+    # NOTE: direction must be set before calling this method
+    def make_step_right(self):
+        gpio.output(self.pin_stp_bottom, True)
+        sleep(self.speed_bottom)
+        gpio.output(self.pin_stp_bottom, False)
+        sleep(self.speed_bottom)
+        self.azimuth_seconds += 1
 
-        # delay = self.min_speed
-        delay = self.max_speed
+    # NOTE: direction must be set before calling this method
+    def make_step_down(self):
+        gpio.output(self.pin_stp_top, True)
+        sleep(self.speed_top)
+        gpio.output(self.pin_stp_top, False)
+        sleep(self.speed_top)
+        self.altitude_seconds -= 1
 
-        for i in range(acc_steps):
-            # delay = round(helper_functions.valmap(i + 1, 1, acc_steps, self.min_speed, self.max_speed), 5)
-            self.make_step(pin, delay)
+    # NOTE: direction must be set before calling this method
+    def make_step_up(self):
+        gpio.output(self.pin_stp_top, True)
+        sleep(self.speed_top)
+        gpio.output(self.pin_stp_top, False)
+        sleep(self.speed_top)
+        self.altitude_seconds += 1
+    # - Actual turning of the motors -
 
-        for i in range(1, steps - acc_steps - dec_steps + 1):
-            self.make_step(pin, delay)
 
-        for i in range(dec_steps):
-            # delay = round(helper_functions.valmap(i + 1, dec_steps, 1, self.min_speed, self.max_speed), 5)
-            self.make_step(pin, delay)
-        '''
 
+
+    # + These methods are called when locating objects +
     # ****************** bottom motor ***********************
-    def turn_left(self, delta_minutes):  # az is in minutes (convert function returns az converted to minutes)
+    def turn_left(self, seconds):  
         # print('Turning left for', delta_minutes, 'minutes.')
         gpio.output(self.pin_dir_bottom, True)  # turn left or right
-        if delta_minutes > 0:
-            self.turn_motor(self.pin_stp_bottom, int(delta_minutes*self.bottom_steps_per_minute))
+        for i in range(seconds):
+            self.make_step_left()
 
-    def turn_right(self, delta_minutes):  # az is in minutes (convert function returns az converted to minutes)
+    def turn_right(self, seconds):  
         # print('Turning right for', delta_minutes, 'minutes.')
         gpio.output(self.pin_dir_bottom, False)  # turn left or right
-        if delta_minutes > 0:
-            self.turn_motor(self.pin_stp_bottom, int(delta_minutes*self.bottom_steps_per_minute))
+        for i in range(seconds):
+            self.make_step_right()
 
     # ****************** top motor ***********************
-    def turn_up(self, delta_minutes):  # az is in minutes (convert function returns az converted to minutes)
+    def turn_up(self, seconds):  
         # print('Turning up for', delta_minutes, 'minutes.')
         gpio.output(self.pin_dir_top, False)  # turn up or down
-        if delta_minutes > 0:
-            self.turn_motor(self.pin_stp_top, int(delta_minutes*self.top_steps_per_minute))
+        for i in range(seconds):
+            self.make_step_up()
 
-    def turn_down(self, delta_minutes):  # az is in minutes (convert function returns az converted to minutes)
+    def turn_down(self, seconds):  
         # print('Turning down for', delta_minutes, 'minutes.')
         gpio.output(self.pin_dir_top, True)  # turn up or down
-        if delta_minutes > 0:
-            self.turn_motor(self.pin_stp_top, int(delta_minutes*self.top_steps_per_minute))
+        for i in range(seconds):
+            self.make_step_down()
+    # - These methods are called when locating objects -
 
-    def start_bottom_motor(self):
+
+
+
+    # + These methods are called when we manually hold and press to rotate motors +
+    def start_bottom_motor_left(self):
+        gpio.output(self.pin_dir_bottom, True) 
+        self.turning_bottom = True
         while self.turning_bottom:
-            self.make_step(self.pin_stp_bottom, self.max_speed)
+            self.make_step_left()
 
-    def start_top_motor(self):
+    def start_bottom_motor_right(self):
+        gpio.output(self.pin_dir_bottom, False) 
+        self.turning_bottom = True
+        while self.turning_bottom:
+            self.make_step_right()
+
+    def start_top_motor_up(self):
+        gpio.output(self.pin_dir_top, False) 
+        self.turning_top = True
         while self.turning_top:
-            self.make_step(self.pin_stp_top, self.max_speed)
+            self.make_step_up()
+
+    def start_top_motor_down(self):
+        gpio.output(self.pin_dir_top, True) 
+        self.turning_top = True
+        while self.turning_top:
+            self.make_step_down()
+    # - These methods are called when we manually hold and press to rotate motors -
+
+
+
 
     def start_turning_left(self):
-        self.turning_bottom = True
-        gpio.output(self.pin_dir_bottom, True) 
-        t = threading.Thread(target=self.start_bottom_motor)
+        t = threading.Thread(target=self.start_bottom_motor_left)
         t.start()
         t.join()
+        return self.return_position()
 
     def start_turning_right(self):
-        self.turning_bottom = True
-        gpio.output(self.pin_dir_bottom, False) 
-        t = threading.Thread(target=self.start_bottom_motor)
+        t = threading.Thread(target=self.start_bottom_motor_right)
         t.start()
         t.join()
+        return self.return_position()
 
     def start_turning_up(self):
-        self.turning_top = True
-        gpio.output(self.pin_dir_top, False) 
-        t = threading.Thread(target=self.start_top_motor)
+        t = threading.Thread(target=self.start_top_motor_up)
         t.start()
         t.join()
+        return self.return_position()
 
     def start_turning_down(self):
-        self.turning_top = True
-        gpio.output(self.pin_dir_top, True) 
-        t = threading.Thread(target=self.start_top_motor)
+        t = threading.Thread(target=self.start_top_motor_down)
         t.start()
         t.join()
+        return self.return_position()
+
+
+    
 
     def stop_turning_left(self):
         self.turning_bottom = False
@@ -180,32 +201,28 @@ class Telescope:
         print('altitude (deg):', alt)
         print('azimuth (deg:)', az)
 
-        alt = helper_functions.real2minutes(alt) # converts decimal degrees to minutes
-        az = helper_functions.real2minutes(az) # converts decimal degrees to minutes
-        print('altitude (min): ', alt)
-        print('azimuth (min):', az)
+        alt = helper_functions.real2seconds(alt) # converts decimal degrees to minutes
+        az = helper_functions.real2seconds(az) # converts decimal degrees to minutes
+        print('altitude (in seconds): ', alt)
+        print('azimuth (in seconds):', az)
 
         if alt < 0:
             return 'Object is below horizon.'
         else:
             t1 = t2 = None
-            if alt > self.altitude_m: # turn up
-                t1 = threading.Thread(target=self.turn_up, args=[abs(alt-self.altitude_m)])
+            if alt > self.altitude_seconds: # turn up
+                t1 = threading.Thread(target=self.turn_up, args=[abs(alt-self.altitude_seconds)])
                 t1.start()
-                self.altitude_m = alt
-            elif alt < self.altitude_m: # turn down
-                t1 = threading.Thread(target=self.turn_down, args=[abs(alt-self.altitude_m)])
+            elif alt < self.altitude_seconds: # turn down
+                t1 = threading.Thread(target=self.turn_down, args=[abs(alt-self.altitude_seconds)])
                 t1.start()
-                self.altitude_m = alt
 
-            if az > self.azimuth_m: # turn right
-                t2 = threading.Thread(target=self.turn_right, args=[abs(az-self.azimuth_m)])
+            if az > self.azimuth_seconds: # turn right
+                t2 = threading.Thread(target=self.turn_right, args=[abs(az-self.azimuth_seconds)])
                 t2.start()
-                self.azimuth_m = az
-            elif az < self.azimuth_m: # turn left
-                t2 = threading.Thread(target=self.turn_left, args=[abs(az-self.azimuth_m)])
+            elif az < self.azimuth_seconds: # turn left
+                t2 = threading.Thread(target=self.turn_left, args=[abs(az-self.azimuth_seconds)])
                 t2.start()
-                self.azimuth_m = az
 
             if t1:
                 t1.join()
@@ -223,6 +240,7 @@ class Telescope:
             self.locate(ti, li)
             sleep(1)
 
+    # Set scope initial position (when pointing a scope to a known celestial object)
     def looking_at(self, ti, li):
 
         alt, az = helper_functions.convert(ti, li)
@@ -230,37 +248,37 @@ class Telescope:
         if alt < 0:
             return 'Object is below horizon.'
         else:
-            self.altitude_m = helper_functions.real2minutes(alt)
-            self.azimuth_m = helper_functions.real2minutes(az)
+            self.altitude_seconds = helper_functions.real2seconds(alt)
+            self.azimuth_seconds = helper_functions.real2seconds(az)
             return f'NOTE: {ti.note} | OBJID: {ti.obj_id} | POS:({self.return_position()})'
 
-    def reset_position(self):
-        self.altitude_m = 90 * 60
-        self.azimuth_m = 0
+    # def set_manual_steps(self, steps):
+    #     self.manual_steps = steps
 
-    def set_manual_steps(self, steps):
-        self.manual_steps = steps
-
+    # returns current scope position for altitude and azimuth respectively in string format D° M" s'
     def return_position(self):
-        return  f'ALT: {helper_functions.min2DM(self.altitude_m)}, AZ: {helper_functions.min2DM(self.azimuth_m)}'
+        return  f'ALT: {helper_functions.seconds2DMS(self.altitude_seconds)}, AZ: {helper_functions.seconds2DMS(self.azimuth_seconds)}'
 
+    def turn_to_altitude(self, alt_seconds):
+        if alt_seconds > self.altitude_seconds: # turn up
+            self.turn_up(abs(alt_seconds-self.altitude_seconds))
+        elif alt_seconds < self.altitude_seconds: # turn down
+            self.turn_down(abs(alt_seconds-self.altitude_seconds))
 
-    def turn_to_altitude(self, alt_minutes):
-        if alt_minutes > self.altitude_m: # turn up
-            self.turn_up(abs(alt_minutes-self.altitude_m))
-            self.altitude_m = alt_minutes
-        elif alt_minutes < self.altitude_m: # turn down
-            self.turn_down(abs(alt_minutes-self.altitude_m))
-            self.altitude_m = alt_minutes
-
+        # returns new position
         return f'POS:({self.return_position()})'
 
-    def turn_to_azimuth(self, az_minutes):
-        if az_minutes > self.azimuth_m: # turn right
-            self.turn_right(abs(az_minutes-self.azimuth_m))
-            self.azimuth_m = az_minutes
-        elif az_minutes < self.azimuth_m: # turn left
-            self.turn_left(abs(az_minutes-self.azimuth_m))
-            self.azimuth_m = az_minutes
+    def turn_to_azimuth(self, az_seconds):
+        if az_seconds > self.azimuth_seconds: # turn right
+            self.turn_right(abs(az_seconds-self.azimuth_seconds))
+        elif az_seconds < self.azimuth_seconds: # turn left
+            self.turn_left(abs(az_seconds-self.azimuth_seconds))
 
+        # returns new position
         return f'POS:({self.return_position()})'
+
+    def set_top_speed(self, speed):
+        self.speed_top = speed
+
+    def set_bottom_speed(self, speed):
+        self.speed_bottom = speed
