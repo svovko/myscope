@@ -40,6 +40,37 @@
 <div id="messageBox" class="text-danger">Message window</div>
 <button id="takePicture" type="button" class="btn text-danger"><i class="fas fa-camera"></i></button>
 
+<!-- set motor speed -->
+<div class="modal fade" id="setSpeedModal" role="dialog">
+  <div class="modal-dialog modal-lg">
+      <div class="modal-content bg-dark">
+
+          <div class="modal-body">
+              <div class="row">
+                  <div class="col-10">
+                    <label for="topSpeed" class="text-danger" id="lblTopSpeed">Top speed</label>
+                    <input type="text" class="form-control-range" id="topSpeed" value="0.0005"> <br>
+                  </div>
+                  <div class="col-2">
+                      <button class="btn text-danger" type="button" id="changeTopSpeed"><i class="fa fa-angle-up"></i></button>
+                  </div>
+              </div>
+
+              <div class="row">
+                  <div class="col-10">
+                    <label for="bottomSpeed" class="text-danger" id="lblBottomSpeed">Bottom speed</label>
+                    <input type="text" class="form-control-range" id="bottomSpeed" value="0.0005"> <br>
+                  </div>
+                  <div class="col-2">
+                      <button class="btn text-danger" type="button" id="changeBottomSpeed"><i class="fas fa-angle-down"></i></button>
+                  </div>
+              </div>
+          </div>
+
+      </div>
+  </div>
+</div>
+
 <!-- move scope by degrees modal -->
 <div class="modal fade" id="moveDegreesModal" role="dialog">
     <div class="modal-dialog modal-lg">
@@ -386,6 +417,7 @@
               <button type="button" class="btn btn-danger text-white m-2" id="openNGCModal"><i class="fas fa-spinner"></i> Search NGC</button>
               <button type="button" class="btn btn-danger text-white m-2" id="openSearchModal"><i class="fas fa-search"></i> Search all</button>
               <button type="button" class="btn btn-danger text-white m-2" id="openDegreesModal"><i class="fas fa-bullseye"></i> Manual position</button>
+              <button type="button" class="btn btn-danger text-white m-2" id="openSpeedModal"><i class="fas fa-fast-forward"></i> Set speed</button>
 
 
               <div class="dropdown d-inline-block m-2">

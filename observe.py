@@ -17,7 +17,7 @@ app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app)
 
 
-t = Telescope(6, 13, 5, 19)
+t = Telescope(5, 19, 6, 13)
 # c = Camera()
 li = LocationInfo()
 ti = TargetInfo()  # last target (for tracking)
@@ -113,6 +113,21 @@ def set_azimuth(az):
         "message": 'Set azimuth: ' + az,
     })
 
+@app.route('/set_bottom_speed/<speed>')
+def set_bottom_speed(speed):
+    t.set_bottom_speed(float(speed))
+    return jsonify({
+        "message": 'Bottom speed: ' + str(speed),
+    })
+
+
+@app.route('/set_top_speed/<speed>')
+def set_top_speed(speed):
+    t.set_top_speed(float(speed))
+    return jsonify({
+        "message": 'Top speed: ' + str(speed),
+    })
+
 
 @app.route('/startTracking')
 def start_tracking():
@@ -137,13 +152,13 @@ def stop_tracking():
 def turn_scope(direction):
 
     if direction == 'left':
-        t.turn_left(t.manual_steps)
+        t.turn_left(3600) # 3600 seconds = 1 degree
     elif direction == 'right':
-        t.turn_right(t.manual_steps)
+        t.turn_right(3600)
     elif direction == 'up':
-        t.turn_up(t.manual_steps)
+        t.turn_up(3600)
     elif direction == 'down':
-        t.turn_down(t.manual_steps)
+        t.turn_down(3600)
 
     return jsonify({
         "message": 'Turned ' + direction,

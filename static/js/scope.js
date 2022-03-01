@@ -68,10 +68,8 @@ $(function() {
     $("#changeAltitude").click(function(){
         var alt = parseInt($("#altitudeRangeDeg").val()) * 60 + parseInt($("#altitudeRangeMin").val());
         $.ajax({
-            url: '/set_altitude/' + alt,
-            success: function(data) {
-                $('#messageBox').html(data['message']);
-            }
+            url: '/set_altitude/' + (alt*60),
+            success: function(data) { $('#messageBox').html(data['message']); }
         });
     });
 
@@ -79,10 +77,24 @@ $(function() {
     $("#changeAzimuth").click(function(){
         var az = parseInt($("#azimuthRangeDeg").val()) * 60 + parseInt($("#azimuthRangeMin").val());
         $.ajax({
-            url: '/set_azimuth/' + az,
-            success: function(data) {
-                $('#messageBox').html(data['message']);
-            }
+            url: '/set_azimuth/' + (az*60),
+            success: function(data) { $('#messageBox').html(data['message']); }
+        });
+    });
+
+    // set top speed
+    $("#changeTopSpeed").click(function(){
+        $.ajax({
+            url: '/set_top_speed/' + $("#topSpeed").val(),
+            success: function(data) { $('#messageBox').html(data['message']); }
+        });
+    });
+
+    // set bottom speed
+    $("#changeBottomSpeed").click(function(){
+        $.ajax({
+            url: '/set_bottom_speed/' + $("#bottomSpeed").val(),
+            success: function(data) { $('#messageBox').html(data['message']); }
         });
     });
 
@@ -115,6 +127,11 @@ $(function() {
     $( "#openDegreesModal" ).click(function() {
         $("#moveDegreesModal").modal('show');
     });
+
+    // open speed modal
+    $( "#openSpeedModal" ).click(function() {
+        $("#setSpeedModal").modal('show');
+    });
     /*************************** - modal windows - *********************/
 
 
@@ -127,9 +144,7 @@ $(function() {
 
          $.ajax({
             url: '/locate/' + $( "#starsselection" ).val(),
-            success: function(data) {
-                $('#messageBox').html(data['message']);
-            }
+            success: function(data) { $('#messageBox').html(data['message']); }
         });
 
     });
@@ -139,9 +154,7 @@ $(function() {
 
          $.ajax({
             url: '/locate/' + $( "#objectselection" ).val(),
-            success: function(data) {
-                $('#messageBox').html(data['message']);
-            }
+            success: function(data) { $('#messageBox').html(data['message']); }
         });
 
     });
@@ -151,9 +164,7 @@ $(function() {
 
          $.ajax({
             url: '/locate/' + $( "#searchResult" ).val(),
-            success: function(data) {
-                $('#messageBox').html(data['message']);
-            }
+            success: function(data) { $('#messageBox').html(data['message']); }
         });
 
     });
@@ -164,9 +175,7 @@ $(function() {
 
          $.ajax({
             url: '/lookingAt/' + $( "#starsselection" ).val(),
-            success: function(data) {
-                $('#messageBox').html(data['message']);
-            }
+            success: function(data) { $('#messageBox').html(data['message']); }
          });
 
     });
@@ -177,9 +186,7 @@ $(function() {
 
         $.ajax({
             url: '/startTracking',
-            success: function(data) {
-                $('#messageBox').html(data['message']);
-            }
+            success: function(data) { $('#messageBox').html(data['message']); }
         });
 
     });
@@ -190,9 +197,7 @@ $(function() {
 
         $.ajax({
             url: '/stopTracking',
-            success: function(data) {
-                $('#messageBox').html(data['message']);
-            }
+            success: function(data) { $('#messageBox').html(data['message']); }
         });
     });
     /*************************** - locating objects - *********************/
@@ -222,9 +227,7 @@ $(function() {
 
          $.ajax({
             url: '/set_iso/' + $( this ).data('iso'),
-            success: function(data) {
-                $('#messageBox').html(data['message']);
-            }
+            success: function(data) { $('#messageBox').html(data['message']); }
         });
 
     });
@@ -235,9 +238,7 @@ $(function() {
 
          $.ajax({
             url: '/set_exp/' + $( this ).data('exp'),
-            success: function(data) {
-                $('#messageBox').html(data['message']);
-            }
+            success: function(data) { $('#messageBox').html(data['message']); }
         });
 
     });
@@ -261,39 +262,32 @@ $(function() {
     // });
 
     $(document).keydown(function (e) {
+        //alert(e.keyCode);
         switch (e.keyCode)
         {
             // left
             case 37:
                 $.ajax({
                     url: '/dir/left',
-                    success: function(data) {
-                        $('#messageBox').html(data['message']);
-                    }
+                    success: function(data) { $('#messageBox').html(data['message']); }
                 }); break;
             // up
             case 38: 
                 $.ajax({
                     url: '/dir/up',
-                    success: function(data) {
-                        $('#messageBox').html(data['message']);
-                    }
+                    success: function(data) { $('#messageBox').html(data['message']); }
                 }); break;
             // right
             case 39:
                 $.ajax({
                     url: '/dir/right',
-                    success: function(data) {
-                        $('#messageBox').html(data['message']);
-                    }
+                    success: function(data) { $('#messageBox').html(data['message']); }
                 }); break;
             // down
             case 40: 
                 $.ajax({
                     url: '/dir/down',
-                    success: function(data) {
-                        $('#messageBox').html(data['message']);
-                    }
+                    success: function(data) { $('#messageBox').html(data['message']); }
                 }); break;
         }
     });
@@ -302,33 +296,31 @@ $(function() {
 
         $.ajax({
            url: '/start_turning/' + $( this ).data('dir'),
-           success: function(data) {
-               $('#messageBox').html(data['message']);
-           }
+           success: function(data) { $('#messageBox').html(data['message']); }
        });
 
    });
 
+    function stop_turning(dir)
+    {
+        //alert('stop_turning: ' + dir);
+        $.ajax({
+            url: '/stop_turning/' + dir,
+            success: function(data) { $('#messageBox').html(data['message']); }
+        });
+    }
 
-   $( ".direction" ).mouseup(function() {
-
-    $.ajax({
-       url: '/stop_turning/' + $( this ).data('dir'),
-       success: function(data) {
-           $('#messageBox').html(data['message']);
-       }
-   });
-
-});
+    $( ".direction" ).mouseup( function() {
+        //alert('mouseup');
+        setTimeout( stop_turning, 1000, $( this ).data('dir') );
+    });
 
     // set manual steps
     $( ".step" ).click(function() {
 
          $.ajax({
             url: '/steps/' + $( this ).data('step'),
-            success: function(data) {
-                $('#messageBox').html(data['message']);
-            }
+            success: function(data) { $('#messageBox').html(data['message']); }
         });
 
     });
@@ -338,9 +330,7 @@ $(function() {
 
          $.ajax({
             url: '/resetPosition',
-            success: function(data) {
-                $('#messageBox').html(data['message']);
-            }
+            success: function(data) { $('#messageBox').html(data['message']); }
         });
 
     });
